@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <style>
+        /* CSS remains exactly the same as before */
         * {
             margin: 0;
             padding: 0;
@@ -698,6 +699,7 @@
             
             countdownInterval = setInterval(() => {
                 secondsLeft--;
+                submitChannel.innerHTML = `Adding in ${secondsLeft}s...`;
                 countdownElement.textContent = `Channel will be added in ${secondsLeft} seconds`;
                 
                 if (secondsLeft <= 0) {
@@ -705,7 +707,8 @@
                     
                     // Add channel to Firestore
                     db.collection("channels").add(channelData)
-                        .then(() => {
+                        .then((docRef) => {
+                            console.log("Channel added with ID: ", docRef.id);
                             showToast("Channel added successfully!");
                             lastAddedDate = today;
                             
@@ -725,13 +728,11 @@
                         })
                         .catch((error) => {
                             console.error("Error adding channel: ", error);
-                            showToast("Error adding channel");
+                            showToast("Error adding channel: " + error.message);
                             submitChannel.disabled = false;
                             submitChannel.innerHTML = 'Add Channel';
                             countdownElement.textContent = '';
                         });
-                } else {
-                    submitChannel.innerHTML = `Adding in ${secondsLeft}s...`;
                 }
             }, 1000);
         }
