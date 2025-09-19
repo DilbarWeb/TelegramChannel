@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Channel</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-top: 20px;
+        }
+        
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .tagline {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 12px;
+            border: 2px solid #fff;
+        }
+        
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 15px;
+            border-radius: 25px;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6a11cb;
+            font-size: 20px;
+        }
+        
+        .channels-list {
+            margin-bottom: 80px;
+        }
+        
+        .channel-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .channel-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .channel-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .channel-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 12px;
+            border: 2px solid #fff;
+        }
+        
+        .channel-name {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .channel-desc {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .join-button {
+            background: linear-gradient(to right, #ff9966, #ff5e62);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .join-button:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+        
+        .add-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(to right, #42e695, #3bb2b8);
+            color: white;
+            border: none;
+            font-size: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .add-button:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            padding: 25px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-title {
+            font-size: 22px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .check-button {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background: linear-gradient(to right, #42e695, #3bb2b8);
+            color: white;
+            border: none;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .channel-preview {
+            display: none;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+        
+        .preview-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .preview-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #fff;
+        }
+        
+        .preview-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .preview-desc {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .submit-button {
+            background: linear-gradient(to right, #42e695, #3bb2b8);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-button:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+        
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
+            .logo {
+                font-size: 28px;
+            }
+            
+            .channel-card {
+                padding: 12px;
+            }
+            
+            .channel-avatar {
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">Progress Channel</div>
+            <div class="tagline">Discover and join the best Telegram channels</div>
+        </header>
+        
+        <div class="user-info">
+            <img id="user-avatar" class="user-avatar" src="" alt="User Avatar">
+            <div id="user-name">Loading user info...</div>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search for channels..." id="search-input">
+            <div class="search-icon">🔍</div>
+        </div>
+        
+        <div class="channels-list" id="channels-list">
+            <!-- Channels will be loaded here -->
+        </div>
+        
+        <button class="add-button" id="add-button">+</button>
+    </div>
+    
+    <div class="modal" id="add-modal">
+        <div class="modal-content">
+            <button class="close-button" id="close-modal">×</button>
+            <h2 class="modal-title">Add a Channel</h2>
+            <div class="form-group">
+                <input type="text" class="form-input" id="channel-link" placeholder="Paste Telegram channel link (e.g., https://t.me/channelname)">
+                <button class="check-button" id="check-link">Check</button>
+            </div>
+            
+            <div class="channel-preview" id="channel-preview">
+                <div class="preview-header">
+                    <img id="preview-avatar" class="preview-avatar" src="" alt="Channel Avatar">
+                    <div id="preview-name" class="preview-name">Channel Name</div>
+                </div>
+                <div id="preview-desc" class="preview-desc">Channel description will appear here...</div>
+                <div id="preview-members" class="preview-desc">Members: Loading...</div>
+            </div>
+            
+            <div class="form-group">
+                <input type="text" class="form-input" id="channel-desc" placeholder="Channel description (optional)">
+            </div>
+            <button class="submit-button" id="submit-channel" disabled>Add Channel</button>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAp23PL-3iLuSuucGJhIjlfqd8BF_ns0Zo",
+            authDomain: "onlinewark-a0147.firebaseapp.com",
+            databaseURL: "https://afginvest-1f83c-default-rtdb.firebaseio.com",
+            projectId: "onlinewark-a0147",
+            storageBucket: "onlinewark-a0147.appspot.com",
+            messagingSenderId: "92155538620",
+            appId: "1:92155538620:android:5e198a8eea6bf17f61f4b9"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Telegram Web App initialization
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+        
+        // Get user info from Telegram
+        const user = tg.initDataUnsafe.user;
+        if (user) {
+            document.getElementById('user-avatar').src = user.photo_url || 'https://via.placeholder.com/40';
+            document.getElementById('user-name').textContent = `${user.first_name} ${user.last_name || ''} (@${user.username})`;
+        }
+        
+        // DOM Elements
+        const channelsList = document.getElementById('channels-list');
+        const addButton = document.getElementById('add-button');
+        const addModal = document.getElementById('add-modal');
+        const closeModal = document.getElementById('close-modal');
+        const submitChannel = document.getElementById('submit-channel');
+        const searchInput = document.getElementById('search-input');
+        const toast = document.getElementById('toast');
+        const checkLinkButton = document.getElementById('check-link');
+        const channelPreview = document.getElementById('channel-preview');
+        const previewAvatar = document.getElementById('preview-avatar');
+        const previewName = document.getElementById('preview-name');
+        const previewDesc = document.getElementById('preview-desc');
+        const previewMembers = document.getElementById('preview-members');
+        
+        // State variables
+        let channels = [];
+        let lastAddedDate = null;
+        let currentChannelData = null;
+        
+        // Show toast message
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Format date
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        
+        // Validate Telegram URL
+        function isValidTelegramUrl(url) {
+            const pattern = /^https?:\/\/(t\.me|telegram\.me)\/([a-zA-Z0-9_]{5,32})(\/)?$/;
+            return pattern.test(url);
+        }
+        
+        // Extract username from Telegram URL
+        function getUsernameFromUrl(url) {
+            const pattern = /^https?:\/\/(t\.me|telegram\.me)\/([a-zA-Z0-9_]{5,32})(\/)?$/;
+            const match = url.match(pattern);
+            return match ? match[2] : null;
+        }
+        
+        // Check channel info using Telegram API (simulated)
+        function checkChannelInfo(url) {
+            return new Promise((resolve, reject) => {
+                // This is a simulation - in a real app, you would use Telegram API
+                const username = getUsernameFromUrl(url);
+                if (!username) {
+                    reject("Invalid Telegram URL");
+                    return;
+                }
+                
+                // Simulate API call delay
+                setTimeout(() => {
+                    // Simulated response with channel data
+                    const simulatedResponses = [
+                        {
+                            name: "Tech News",
+                            description: "Latest technology news and updates from around the world",
+                            members: "12.5K",
+                            avatar: "https://via.placeholder.com/100/6a11cb/ffffff?text=TN"
+                        },
+                        {
+                            name: "Programming Tips",
+                            description: "Daily programming tips and tricks for developers",
+                            members: "8.7K",
+                            avatar: "https://via.placeholder.com/100/2575fc/ffffff?text=PT"
+                        },
+                        {
+                            name: "Design Inspiration",
+                            description: "Beautiful design inspiration for creators",
+                            members: "15.2K",
+                            avatar: "https://via.placeholder.com/100/ff5e62/ffffff?text=DI"
+                        },
+                        {
+                            name: "Startup Stories",
+                            description: "Inspiring stories from successful startups",
+                            members: "5.3K",
+                            avatar: "https://via.placeholder.com/100/42e695/ffffff?text=SS"
+                        },
+                        {
+                            name: "Crypto Updates",
+                            description: "Latest news and updates from the cryptocurrency world",
+                            members: "22.8K",
+                            avatar: "https://via.placeholder.com/100/3bb2b8/ffffff?text=CU"
+                        }
+                    ];
+                    
+                    // Select a random simulated response based on username hash
+                    const hash = username.split('').reduce((a, b) => {
+                        a = ((a << 5) - a) + b.charCodeAt(0);
+                        return a & a;
+                    }, 0);
+                    const index = Math.abs(hash) % simulatedResponses.length;
+                    
+                    resolve(simulatedResponses[index]);
+                }, 1500);
+            });
+        }
+        
+        // Render channels to the list
+        function renderChannels(channelsArray) {
+            channelsList.innerHTML = '';
+            
+            if (channelsArray.length === 0) {
+                channelsList.innerHTML = '<div class="channel-card"><div class="channel-desc">No channels found</div></div>';
+                return;
+            }
+            
+            channelsArray.forEach(channel => {
+                const channelElement = document.createElement('div');
+                channelElement.className = 'channel-card';
+                channelElement.innerHTML = `
+                    <div class="channel-header">
+                        <img src="${channel.avatar || 'https://via.placeholder.com/50'}" alt="${channel.name}" class="channel-avatar">
+                        <div class="channel-name">${channel.name}</div>
+                    </div>
+                    <div class="channel-desc">${channel.description || 'No description available'}</div>
+                    <div class="channel-desc">Added by: ${channel.addedBy} on ${formatDate(channel.addedDate)}</div>
+                    <a href="${channel.link}" target="_blank" class="join-button">Join Channel</a>
+                `;
+                channelsList.appendChild(channelElement);
+            });
+        }
+        
+        // Load channels from Firestore
+        function loadChannels() {
+            db.collection("channels").orderBy("addedDate", "desc")
+                .get()
+                .then((querySnapshot) => {
+                    channels = [];
+                    querySnapshot.forEach((doc) => {
+                        channels.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderChannels(channels);
+                })
+                .catch((error) => {
+                    console.error("Error loading channels: ", error);
+                    showToast("Error loading channels");
+                });
+        }
+        
+        // Add new channel to Firestore
+        function addChannel(link, name, description, avatar, members) {
+            // Check if user has already added a channel today
+            const today = new Date().toDateString();
+            if (lastAddedDate === today) {
+                showToast("You can only add one channel per day");
+                return;
+            }
+            
+            const channelData = {
+                link: link,
+                name: name,
+                description: description,
+                avatar: avatar,
+                members: members,
+                addedBy: user.username || `${user.first_name} ${user.last_name || ''}`,
+                addedByID: user.id,
+                addedDate: new Date().toISOString()
+            };
+            
+            db.collection("channels").add(channelData)
+                .then(() => {
+                    showToast("Channel added successfully!");
+                    lastAddedDate = today;
+                    loadChannels();
+                    addModal.style.display = 'none';
+                    
+                    // Reset form
+                    document.getElementById('channel-link').value = '';
+                    document.getElementById('channel-desc').value = '';
+                    channelPreview.style.display = 'none';
+                    submitChannel.disabled = true;
+                    currentChannelData = null;
+                })
+                .catch((error) => {
+                    console.error("Error adding channel: ", error);
+                    showToast("Error adding channel");
+                });
+        }
+        
+        // Search channels
+        function searchChannels(query) {
+            const filteredChannels = channels.filter(channel => 
+                channel.name.toLowerCase().includes(query.toLowerCase()) ||
+                channel.description.toLowerCase().includes(query.toLowerCase())
+            );
+            renderChannels(filteredChannels);
+        }
+        
+        // Event Listeners
+        addButton.addEventListener('click', () => {
+            addModal.style.display = 'flex';
+        });
+        
+        closeModal.addEventListener('click', () => {
+            addModal.style.display = 'none';
+        });
+        
+        checkLinkButton.addEventListener('click', () => {
+            const link = document.getElementById('channel-link').value;
+            
+            if (!link) {
+                showToast("Please enter a Telegram channel link");
+                return;
+            }
+            
+            if (!isValidTelegramUrl(link)) {
+                showToast("Please enter a valid Telegram channel link (e.g., https://t.me/channelname)");
+                return;
+            }
+            
+            showToast("Checking channel information...");
+            
+            checkChannelInfo(link)
+                .then(channelData => {
+                    // Show preview
+                    previewAvatar.src = channelData.avatar;
+                    previewName.textContent = channelData.name;
+                    previewDesc.textContent = channelData.description;
+                    previewMembers.textContent = `Members: ${channelData.members}`;
+                    channelPreview.style.display = 'block';
+                    
+                    // Enable submit button
+                    submitChannel.disabled = false;
+                    
+                    // Store channel data
+                    currentChannelData = {
+                        link: link,
+                        name: channelData.name,
+                        description: channelData.description,
+                        avatar: channelData.avatar,
+                        members: channelData.members
+                    };
+                    
+                    // Auto-fill description if empty
+                    if (!document.getElementById('channel-desc').value) {
+                        document.getElementById('channel-desc').value = channelData.description;
+                    }
+                    
+                    showToast("Channel information loaded successfully!");
+                })
+                .catch(error => {
+                    showToast("Error: " + error);
+                });
+        });
+        
+        submitChannel.addEventListener('click', () => {
+            if (!currentChannelData) {
+                showToast("Please check the channel link first");
+                return;
+            }
+            
+            const customDesc = document.getElementById('channel-desc').value;
+            
+            addChannel(
+                currentChannelData.link,
+                currentChannelData.name,
+                customDesc || currentChannelData.description,
+                currentChannelData.avatar,
+                currentChannelData.members
+            );
+        });
+        
+        searchInput.addEventListener('input', (e) => {
+            searchChannels(e.target.value);
+        });
+        
+        // Load channels on startup
+        loadChannels();
+        
+        // Check if user has already added a channel today
+        if (user) {
+            db.collection("channels")
+                .where("addedByID", "==", user.id)
+                .orderBy("addedDate", "desc")
+                .limit(1)
+                .get()
+                .then((querySnapshot) => {
+                    if (!querySnapshot.empty) {
+                        const lastChannel = querySnapshot.docs[0].data();
+                        const lastDate = new Date(lastChannel.addedDate).toDateString();
+                        const today = new Date().toDateString();
+                        
+                        if (lastDate === today) {
+                            lastAddedDate = today;
+                            showToast("You've already added a channel today. Try again tomorrow.");
+                        }
+                    }
+                });
+        }
+    </script>
+</body>
+</html> 
