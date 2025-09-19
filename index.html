@@ -209,6 +209,25 @@
             gap: 5px;
         }
 
+        .group-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .type-group {
+            background-color: rgba(0, 136, 204, 0.1);
+            color: var(--primary);
+        }
+
+        .type-channel {
+            background-color: rgba(111, 66, 193, 0.1);
+            color: var(--secondary);
+        }
+
         .group-actions {
             display: flex;
             justify-content: space-between;
@@ -233,6 +252,19 @@
         .join-btn:hover {
             opacity: 0.9;
             transform: scale(1.05);
+        }
+
+        .joined-btn {
+            background: var(--light-gray);
+            color: var(--gray);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: default;
         }
 
         .add-group-btn {
@@ -446,6 +478,29 @@
             color: var(--light-gray);
         }
 
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background: linear-gradient(120deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
         @media (max-width: 600px) {
             .header {
                 flex-direction: column;
@@ -491,15 +546,21 @@
             <div class="balance-amount" id="balance">0 coins</div>
         </div>
 
-        <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" class="search-input" id="search-input" placeholder="Search groups...">
+        <div class="tabs">
+            <div class="tab active" data-tab="all">All</div>
+            <div class="tab" data-tab="groups">Groups</div>
+            <div class="tab" data-tab="channels">Channels</div>
         </div>
 
-        <h2 class="section-title">Available Groups</h2>
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="search-input" placeholder="Search groups or channels...">
+        </div>
+
+        <h2 class="section-title">Available Groups & Channels</h2>
         
         <div class="group-list" id="group-list">
-            <!-- Groups will be loaded here -->
+            <!-- Groups and channels will be loaded here -->
         </div>
 
         <div class="add-group-btn" id="add-group-btn">
@@ -509,22 +570,26 @@
         <div class="modal" id="add-group-modal">
             <div class="modal-content">
                 <h2 class="modal-title">
-                    <i class="fas fa-plus-circle"></i> Add New Group
+                    <i class="fas fa-plus-circle"></i> Add New Group/Channel
                 </h2>
                 <div class="form-group">
-                    <label class="form-label" for="group-link">Telegram Group Link</label>
+                    <label class="form-label" for="group-link">Telegram Group/Channel Link</label>
                     <input type="text" class="form-input" id="group-link" placeholder="https://t.me/groupname">
-                    <div class="error" id="link-error">Please enter a valid Telegram group link (https://t.me/groupname)</div>
+                    <div class="error" id="link-error">Please enter a valid Telegram group/channel link (https://t.me/name)</div>
                 </div>
                 
                 <button class="check-btn" id="check-btn">
-                    <i class="fas fa-check-circle"></i> Check Group
+                    <i class="fas fa-check-circle"></i> Check Group/Channel
                 </button>
                 
                 <div class="group-details" id="group-details">
-                    <h3>Group Details</h3>
+                    <h3>Group/Channel Details</h3>
                     <div class="detail-item">
-                        <span class="detail-label">Group Name:</span>
+                        <span class="detail-label">Type:</span>
+                        <span class="detail-value" id="detail-type">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Name:</span>
                         <span class="detail-value" id="detail-name">-</span>
                     </div>
                     <div class="detail-item">
@@ -539,7 +604,7 @@
                 
                 <div class="form-actions">
                     <button class="btn btn-secondary" id="cancel-btn">Cancel</button>
-                    <button class="btn btn-primary" id="add-btn">Add Group (30 coins)</button>
+                    <button class="btn btn-primary" id="add-btn">Add (30 coins)</button>
                 </div>
             </div>
         </div>
@@ -580,7 +645,10 @@
         
         let userBalance = 0;
         let groups = [];
+        let channels = [];
+        let allItems = [];
         let currentGroupData = null;
+        let joinedGroups = {};
         
         // DOM Elements
         const balanceEl = document.getElementById('balance');
@@ -591,6 +659,7 @@
         const groupLinkInput = document.getElementById('group-link');
         const checkBtn = document.getElementById('check-btn');
         const groupDetails = document.getElementById('group-details');
+        const detailType = document.getElementById('detail-type');
         const detailName = document.getElementById('detail-name');
         const detailDescription = document.getElementById('detail-description');
         const detailMembers = document.getElementById('detail-members');
@@ -599,6 +668,7 @@
         const linkError = document.getElementById('link-error');
         const notification = document.getElementById('notification');
         const notificationMessage = document.getElementById('notification-message');
+        const tabs = document.querySelectorAll('.tab');
         
         // Load user data and groups
         function loadUserData() {
@@ -614,13 +684,19 @@
                     const userData = snapshot.val();
                     userBalance = userData.balance || 0;
                     balanceEl.textContent = userBalance + ' coins';
+                    
+                    // Load joined groups
+                    if (userData.joinedGroups) {
+                        joinedGroups = userData.joinedGroups;
+                    }
                 } else {
                     // Create new user with initial 5 coins
                     userRef.set({
                         username: user.username,
                         first_name: user.first_name,
                         photo_url: user.photo_url,
-                        balance: 5
+                        balance: 5,
+                        joinedGroups: {}
                     });
                     userBalance = 5;
                     balanceEl.textContent = userBalance + ' coins';
@@ -633,80 +709,135 @@
             groupsRef.on('value', (snapshot) => {
                 groupListEl.innerHTML = '';
                 groups = [];
+                channels = [];
+                allItems = [];
                 
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     for (let id in data) {
-                        groups.push({ id, ...data[id] });
+                        if (data[id].type === 'channel') {
+                            channels.push({ id, ...data[id] });
+                        } else {
+                            groups.push({ id, ...data[id] });
+                        }
+                        allItems.push({ id, ...data[id] });
                     }
                     
                     // Sort by date (newest first)
                     groups.sort((a, b) => b.timestamp - a.timestamp);
+                    channels.sort((a, b) => b.timestamp - a.timestamp);
+                    allItems.sort((a, b) => b.timestamp - a.timestamp);
                     
-                    // Display groups
-                    displayGroups(groups);
+                    // Display all items by default
+                    displayItems(allItems);
                 } else {
-                    groupListEl.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-users"></i>
-                            <h3>No groups available</h3>
-                            <p>Be the first to add a group!</p>
-                        </div>
-                    `;
+                    showEmptyState();
                 }
             });
         }
         
-        function displayGroups(groupsToDisplay) {
+        function displayItems(items) {
             groupListEl.innerHTML = '';
             
-            if (groupsToDisplay.length === 0) {
-                groupListEl.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-search"></i>
-                        <h3>No groups found</h3>
-                        <p>Try a different search term</p>
-                    </div>
-                `;
+            if (items.length === 0) {
+                showEmptyState();
                 return;
             }
             
-            groupsToDisplay.forEach(group => {
+            items.forEach(item => {
+                const isJoined = user && joinedGroups[item.id];
+                
                 const groupCard = document.createElement('div');
                 groupCard.className = 'group-card';
                 
                 groupCard.innerHTML = `
                     <div class="group-header">
                         <div class="group-image">
-                            <img src="${group.image || 'https://via.placeholder.com/60'}" alt="${group.name}">
+                            <img src="${item.image || 'https://via.placeholder.com/60'}" alt="${item.name}">
                         </div>
                         <div class="group-info">
-                            <div class="group-name">${group.name}</div>
-                            <div class="group-description">${group.description || 'No description available'}</div>
+                            <div class="group-name">${item.name} 
+                                <span class="group-type ${item.type === 'channel' ? 'type-channel' : 'type-group'}">
+                                    ${item.type === 'channel' ? 'Channel' : 'Group'}
+                                </span>
+                            </div>
+                            <div class="group-description">${item.description || 'No description available'}</div>
                             <div class="group-members">
-                                <i class="fas fa-users"></i> ${group.members || 0} members
+                                <i class="fas fa-users"></i> ${item.members || 0} members
                             </div>
                         </div>
                     </div>
                     <div class="group-actions">
-                        <a href="${group.link}" target="_blank" class="join-btn">
-                            <i class="fas fa-sign-in-alt"></i> Join Group
-                        </a>
+                        ${isJoined ? 
+                            `<button class="joined-btn"><i class="fas fa-check"></i> Joined</button>` : 
+                            `<a href="${item.link}" target="_blank" class="join-btn" data-id="${item.id}">
+                                <i class="fas fa-sign-in-alt"></i> Join ${item.type === 'channel' ? 'Channel' : 'Group'}
+                            </a>`
+                        }
                     </div>
                 `;
                 
                 groupListEl.appendChild(groupCard);
             });
+            
+            // Add event listeners to join buttons
+            document.querySelectorAll('.join-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const itemId = this.getAttribute('data-id');
+                    joinGroup(itemId, this.href);
+                });
+            });
+        }
+        
+        function showEmptyState() {
+            groupListEl.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No groups or channels available</h3>
+                    <p>Be the first to add a group or channel!</p>
+                </div>
+            `;
         }
         
         function showNotification(message, isSuccess = true) {
+            const icon = isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle';
+            notification.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <div id="notification-message">${message}</div>
+            `;
             notification.className = isSuccess ? 'notification success' : 'notification error';
-            notificationMessage.innerHTML = message;
             notification.classList.add('show');
             
             setTimeout(() => {
                 notification.classList.remove('show');
             }, 3000);
+        }
+        
+        function joinGroup(itemId, link) {
+            // Open the group/channel in Telegram
+            window.open(link, '_blank');
+            
+            // Add 5 coins to user balance
+            userBalance += 5;
+            balanceEl.textContent = userBalance + ' coins';
+            
+            // Mark as joined
+            if (user) {
+                joinedGroups[itemId] = true;
+                
+                // Update user data in Firebase
+                const userRef = database.ref('users/' + user.id);
+                userRef.update({ 
+                    balance: userBalance,
+                    joinedGroups: joinedGroups
+                });
+            }
+            
+            // Reload groups to update UI
+            loadGroups();
+            
+            showNotification("You've received 5 coins for joining!");
         }
         
         function checkGroup() {
@@ -726,6 +857,7 @@
             simulateTelegramApiCall(link)
                 .then(groupData => {
                     currentGroupData = groupData;
+                    detailType.textContent = groupData.type === 'channel' ? 'Channel' : 'Group';
                     detailName.textContent = groupData.name;
                     detailDescription.textContent = groupData.description || 'No description available';
                     detailMembers.textContent = groupData.members + ' members';
@@ -741,17 +873,21 @@
         function simulateTelegramApiCall(link) {
             // This is a simulation - in a real app, you would use the Telegram Bot API
             return new Promise((resolve) => {
-                // Extract group name from link
-                const groupName = link.split('/').pop();
+                // Extract name from link
+                const name = link.split('/').pop();
+                
+                // Determine if it's a group or channel (random for demo)
+                const isChannel = Math.random() > 0.5;
                 
                 // Simulate API delay
                 setTimeout(() => {
                     resolve({
-                        name: groupName.charAt(0).toUpperCase() + groupName.slice(1) + " Group",
-                        description: "This is a sample Telegram group description for demonstration purposes.",
+                        name: name.charAt(0).toUpperCase() + name.slice(1) + (isChannel ? " Channel" : " Group"),
+                        description: `This is a sample Telegram ${isChannel ? 'channel' : 'group'} description for demonstration purposes.`,
                         members: Math.floor(Math.random() * 10000) + 1000,
                         link: link,
-                        image: "https://via.placeholder.com/60"
+                        image: "https://via.placeholder.com/60",
+                        type: isChannel ? 'channel' : 'group'
                     });
                 }, 1500);
             });
@@ -759,12 +895,12 @@
         
         function addGroup() {
             if (userBalance < 30) {
-                showNotification('You need at least 30 coins to add a group', false);
+                showNotification('You need at least 30 coins to add a group/channel', false);
                 return;
             }
             
             if (!currentGroupData) {
-                showNotification('Please check group information first', false);
+                showNotification('Please check group/channel information first', false);
                 return;
             }
             
@@ -788,6 +924,7 @@
                 members: currentGroupData.members,
                 link: currentGroupData.link,
                 image: currentGroupData.image,
+                type: currentGroupData.type,
                 addedBy: user ? user.id : 'anonymous',
                 timestamp: Date.now()
             });
@@ -798,7 +935,7 @@
             groupDetails.style.display = 'none';
             currentGroupData = null;
             
-            showNotification('Group added successfully! 30 coins deducted from your balance.');
+            showNotification('Added successfully! 30 coins deducted from your balance.');
         }
         
         // Event Listeners
@@ -820,11 +957,42 @@
         
         searchInput.addEventListener('input', () => {
             const searchTerm = searchInput.value.toLowerCase();
-            const filteredGroups = groups.filter(group => 
-                group.name.toLowerCase().includes(searchTerm) || 
-                (group.description && group.description.toLowerCase().includes(searchTerm))
+            const activeTab = document.querySelector('.tab.active').dataset.tab;
+            
+            let itemsToSearch = [];
+            if (activeTab === 'groups') itemsToSearch = groups;
+            else if (activeTab === 'channels') itemsToSearch = channels;
+            else itemsToSearch = allItems;
+            
+            const filteredItems = itemsToSearch.filter(item => 
+                item.name.toLowerCase().includes(searchTerm) || 
+                (item.description && item.description.toLowerCase().includes(searchTerm))
             );
-            displayGroups(filteredGroups);
+            
+            displayItems(filteredItems);
+        });
+        
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const tabType = tab.dataset.tab;
+                let itemsToShow = [];
+                
+                if (tabType === 'groups') itemsToShow = groups;
+                else if (tabType === 'channels') itemsToShow = channels;
+                else itemsToShow = allItems;
+                
+                const searchTerm = searchInput.value.toLowerCase();
+                const filteredItems = itemsToShow.filter(item => 
+                    item.name.toLowerCase().includes(searchTerm) || 
+                    (item.description && item.description.toLowerCase().includes(searchTerm))
+                );
+                
+                displayItems(filteredItems);
+            });
         });
         
         // Close modal when clicking outside
@@ -841,47 +1009,6 @@
         // Initialize app
         loadUserData();
         loadGroups();
-        
-        // Add some sample groups for demonstration
-        setTimeout(() => {
-            if (groups.length === 0) {
-                const sampleGroups = [
-                    {
-                        name: "Tech Enthusiasts",
-                        description: "A group for technology lovers and developers",
-                        members: 12500,
-                        link: "https://t.me/techenthusiasts",
-                        image: "https://via.placeholder.com/60?text=TE"
-                    },
-                    {
-                        name: "Design Community",
-                        description: "Share and discuss design ideas and inspiration",
-                        members: 8700,
-                        link: "https://t.me/designcommunity",
-                        image: "https://via.placeholder.com/60?text=DC"
-                    },
-                    {
-                        name: "Startup Founders",
-                        description: "Network with fellow entrepreneurs and founders",
-                        members: 5600,
-                        link: "https://t.me/startupfounders",
-                        image: "https://via.placeholder.com/60?text=SF"
-                    }
-                ];
-                
-                sampleGroups.forEach((group, index) => {
-                    setTimeout(() => {
-                        const groupsRef = database.ref('groups');
-                        const newGroupRef = groupsRef.push();
-                        newGroupRef.set({
-                            ...group,
-                            addedBy: 'system',
-                            timestamp: Date.now() - (index * 86400000) // Spread out over days
-                        });
-                    }, index * 500);
-                });
-            }
-        }, 2000);
     </script>
 </body>
 </html> 
