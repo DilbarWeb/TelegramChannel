@@ -131,6 +131,12 @@
             line-height: 1.4;
         }
         
+        .channel-members {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+        
         .join-button {
             background: linear-gradient(to right, #ff9966, #ff5e62);
             color: white;
@@ -267,6 +273,12 @@
             margin-bottom: 10px;
         }
         
+        .preview-members {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+        
         .submit-button {
             background: linear-gradient(to right, #42e695, #3bb2b8);
             color: white;
@@ -282,7 +294,12 @@
             transition: all 0.3s ease;
         }
         
-        .submit-button:hover {
+        .submit-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .submit-button:hover:not(:disabled) {
             opacity: 0.9;
             transform: scale(1.02);
         }
@@ -314,6 +331,20 @@
         
         .toast.show {
             opacity: 1;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         
         @media (max-width: 480px) {
@@ -372,15 +403,14 @@
             <div class="channel-preview" id="channel-preview">
                 <div class="preview-header">
                     <img id="preview-avatar" class="preview-avatar" src="" alt="Channel Avatar">
-                    <div id="preview-name" class="preview-name">Channel Name</div>
+                    <div>
+                        <div id="preview-name" class="preview-name">Channel Name</div>
+                        <div id="preview-members" class="preview-members">Members: Loading...</div>
+                    </div>
                 </div>
                 <div id="preview-desc" class="preview-desc">Channel description will appear here...</div>
-                <div id="preview-members" class="preview-desc">Members: Loading...</div>
             </div>
             
-            <div class="form-group">
-                <input type="text" class="form-input" id="channel-desc" placeholder="Channel description (optional)">
-            </div>
             <button class="submit-button" id="submit-channel" disabled>Add Channel</button>
         </div>
     </div>
@@ -390,9 +420,9 @@
     <script>
         // Initialize Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyAp23PL-3iLuSuucGJhIjlfqd8BF_ns0Zo",
+            apiKey: "AIzaSyD4UbW_Iy4kUWH3V70Q1mWCI4-_KFk6ku4",
             authDomain: "onlinewark-a0147.firebaseapp.com",
-            databaseURL: "https://afginvest-1f83c-default-rtdb.firebaseio.com",
+            databaseURL: "https://onlinewark-a0147-default-rtdb.firebaseio.com",
             projectId: "onlinewark-a0147",
             storageBucket: "onlinewark-a0147.appspot.com",
             messagingSenderId: "92155538620",
@@ -435,6 +465,9 @@
         let lastAddedDate = null;
         let currentChannelData = null;
         
+        // Telegram Bot API Token - تاسو باید د خپل بوټ token دلته اضافه کړئ
+        const BOT_TOKEN = '8458203008:AAFFGhznXX5a8pf-OIcrqSSH_r3CQFic404'; // د BotFather څخه ترلاسه کړئ
+        
         // Show toast message
         function showToast(message) {
             toast.textContent = message;
@@ -466,62 +499,64 @@
             return match ? match[2] : null;
         }
         
-        // Check channel info using Telegram API (simulated)
-        function checkChannelInfo(url) {
-            return new Promise((resolve, reject) => {
-                // This is a simulation - in a real app, you would use Telegram API
-                const username = getUsernameFromUrl(url);
-                if (!username) {
-                    reject("Invalid Telegram URL");
-                    return;
-                }
+        // Get chat information from Telegram API
+        async function getChatInfo(username) {
+            try {
+                // د Telegram Bot API کارول د چینل معلومات ترلاسه کولو لپاره
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChat?chat_id=@${username}`);
+                const data = await response.json();
                 
-                // Simulate API call delay
-                setTimeout(() => {
-                    // Simulated response with channel data
-                    const simulatedResponses = [
-                        {
-                            name: "Tech News",
-                            description: "Latest technology news and updates from around the world",
-                            members: "12.5K",
-                            avatar: "https://via.placeholder.com/100/6a11cb/ffffff?text=TN"
-                        },
-                        {
-                            name: "Programming Tips",
-                            description: "Daily programming tips and tricks for developers",
-                            members: "8.7K",
-                            avatar: "https://via.placeholder.com/100/2575fc/ffffff?text=PT"
-                        },
-                        {
-                            name: "Design Inspiration",
-                            description: "Beautiful design inspiration for creators",
-                            members: "15.2K",
-                            avatar: "https://via.placeholder.com/100/ff5e62/ffffff?text=DI"
-                        },
-                        {
-                            name: "Startup Stories",
-                            description: "Inspiring stories from successful startups",
-                            members: "5.3K",
-                            avatar: "https://via.placeholder.com/100/42e695/ffffff?text=SS"
-                        },
-                        {
-                            name: "Crypto Updates",
-                            description: "Latest news and updates from the cryptocurrency world",
-                            members: "22.8K",
-                            avatar: "https://via.placeholder.com/100/3bb2b8/ffffff?text=CU"
-                        }
-                    ];
-                    
-                    // Select a random simulated response based on username hash
-                    const hash = username.split('').reduce((a, b) => {
-                        a = ((a << 5) - a) + b.charCodeAt(0);
-                        return a & a;
-                    }, 0);
-                    const index = Math.abs(hash) % simulatedResponses.length;
-                    
-                    resolve(simulatedResponses[index]);
-                }, 1500);
-            });
+                if (data.ok) {
+                    return data.result;
+                } else {
+                    throw new Error(data.description || 'Failed to get channel info');
+                }
+            } catch (error) {
+                console.error('Error fetching chat info:', error);
+                throw error;
+            }
+        }
+        
+        // Get chat members count from Telegram API
+        async function getChatMembersCount(chatId) {
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMembersCount?chat_id=${chatId}`);
+                const data = await response.json();
+                
+                if (data.ok) {
+                    return data.result;
+                } else {
+                    throw new Error(data.description || 'Failed to get members count');
+                }
+            } catch (error) {
+                console.error('Error fetching members count:', error);
+                throw error;
+            }
+        }
+        
+        // Check channel info using Telegram API
+        async function checkChannelInfo(url) {
+            const username = getUsernameFromUrl(url);
+            if (!username) {
+                throw new Error("Invalid Telegram URL");
+            }
+            
+            try {
+                const chatInfo = await getChatInfo(username);
+                const membersCount = await getChatMembersCount(chatInfo.id);
+                
+                return {
+                    name: chatInfo.title,
+                    description: chatInfo.description || 'No description available',
+                    members: membersCount.toLocaleString(),
+                    avatar: `https://via.placeholder.com/100/6a11cb/ffffff?text=${chatInfo.title.charAt(0)}`,
+                    username: username,
+                    id: chatInfo.id
+                };
+            } catch (error) {
+                console.error('Error checking channel info:', error);
+                throw new Error('Failed to retrieve channel information. Make sure the bot is added to the channel as an administrator.');
+            }
         }
         
         // Render channels to the list
@@ -539,7 +574,10 @@
                 channelElement.innerHTML = `
                     <div class="channel-header">
                         <img src="${channel.avatar || 'https://via.placeholder.com/50'}" alt="${channel.name}" class="channel-avatar">
-                        <div class="channel-name">${channel.name}</div>
+                        <div>
+                            <div class="channel-name">${channel.name}</div>
+                            <div class="channel-members">Members: ${channel.members || 'N/A'}</div>
+                        </div>
                     </div>
                     <div class="channel-desc">${channel.description || 'No description available'}</div>
                     <div class="channel-desc">Added by: ${channel.addedBy} on ${formatDate(channel.addedDate)}</div>
@@ -567,7 +605,7 @@
         }
         
         // Add new channel to Firestore
-        function addChannel(link, name, description, avatar, members) {
+        function addChannel(link, name, description, avatar, members, username, id) {
             // Check if user has already added a channel today
             const today = new Date().toDateString();
             if (lastAddedDate === today) {
@@ -581,6 +619,8 @@
                 description: description,
                 avatar: avatar,
                 members: members,
+                username: username,
+                id: id,
                 addedBy: user.username || `${user.first_name} ${user.last_name || ''}`,
                 addedByID: user.id,
                 addedDate: new Date().toISOString()
@@ -590,15 +630,18 @@
                 .then(() => {
                     showToast("Channel added successfully!");
                     lastAddedDate = today;
-                    loadChannels();
-                    addModal.style.display = 'none';
                     
-                    // Reset form
-                    document.getElementById('channel-link').value = '';
-                    document.getElementById('channel-desc').value = '';
-                    channelPreview.style.display = 'none';
-                    submitChannel.disabled = true;
-                    currentChannelData = null;
+                    // Load channels after a short delay
+                    setTimeout(() => {
+                        loadChannels();
+                        addModal.style.display = 'none';
+                        
+                        // Reset form
+                        document.getElementById('channel-link').value = '';
+                        channelPreview.style.display = 'none';
+                        submitChannel.disabled = true;
+                        currentChannelData = null;
+                    }, 5000); // 5 seconds delay as requested
                 })
                 .catch((error) => {
                     console.error("Error adding channel: ", error);
@@ -610,7 +653,8 @@
         function searchChannels(query) {
             const filteredChannels = channels.filter(channel => 
                 channel.name.toLowerCase().includes(query.toLowerCase()) ||
-                channel.description.toLowerCase().includes(query.toLowerCase())
+                (channel.description && channel.description.toLowerCase().includes(query.toLowerCase())) ||
+                (channel.username && channel.username.toLowerCase().includes(query.toLowerCase()))
             );
             renderChannels(filteredChannels);
         }
@@ -624,7 +668,7 @@
             addModal.style.display = 'none';
         });
         
-        checkLinkButton.addEventListener('click', () => {
+        checkLinkButton.addEventListener('click', async () => {
             const link = document.getElementById('channel-link').value;
             
             if (!link) {
@@ -637,39 +681,35 @@
                 return;
             }
             
-            showToast("Checking channel information...");
+            // Show loading state
+            checkLinkButton.innerHTML = '<div class="loading"></div>';
+            checkLinkButton.disabled = true;
             
-            checkChannelInfo(link)
-                .then(channelData => {
-                    // Show preview
-                    previewAvatar.src = channelData.avatar;
-                    previewName.textContent = channelData.name;
-                    previewDesc.textContent = channelData.description;
-                    previewMembers.textContent = `Members: ${channelData.members}`;
-                    channelPreview.style.display = 'block';
-                    
-                    // Enable submit button
-                    submitChannel.disabled = false;
-                    
-                    // Store channel data
-                    currentChannelData = {
-                        link: link,
-                        name: channelData.name,
-                        description: channelData.description,
-                        avatar: channelData.avatar,
-                        members: channelData.members
-                    };
-                    
-                    // Auto-fill description if empty
-                    if (!document.getElementById('channel-desc').value) {
-                        document.getElementById('channel-desc').value = channelData.description;
-                    }
-                    
-                    showToast("Channel information loaded successfully!");
-                })
-                .catch(error => {
-                    showToast("Error: " + error);
-                });
+            try {
+                const channelData = await checkChannelInfo(link);
+                
+                // Show preview
+                previewAvatar.src = channelData.avatar;
+                previewName.textContent = channelData.name;
+                previewDesc.textContent = channelData.description;
+                previewMembers.textContent = `Members: ${channelData.members}`;
+                channelPreview.style.display = 'block';
+                
+                // Enable submit button
+                submitChannel.disabled = false;
+                
+                // Store channel data
+                currentChannelData = channelData;
+                currentChannelData.link = link;
+                
+                showToast("Channel information loaded successfully!");
+            } catch (error) {
+                showToast("Error: " + error.message);
+            } finally {
+                // Reset button state
+                checkLinkButton.innerHTML = 'Check';
+                checkLinkButton.disabled = false;
+            }
         });
         
         submitChannel.addEventListener('click', () => {
@@ -678,14 +718,17 @@
                 return;
             }
             
-            const customDesc = document.getElementById('channel-desc').value;
+            submitChannel.innerHTML = 'Adding...';
+            submitChannel.disabled = true;
             
             addChannel(
                 currentChannelData.link,
                 currentChannelData.name,
-                customDesc || currentChannelData.description,
+                currentChannelData.description,
                 currentChannelData.avatar,
-                currentChannelData.members
+                currentChannelData.members,
+                currentChannelData.username,
+                currentChannelData.id
             );
         });
         
