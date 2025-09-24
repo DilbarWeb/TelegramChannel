@@ -1,0 +1,21 @@
+{
+  "name": "telegram-mining-app",
+  "version": "1.0.0",
+  "description": "Telegram Mini App for free mining",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Build complete - static files ready'",
+    "start": "python3 -m http.server 3000",
+    "dev": "python3 -m http.server 3000"
+  },
+  "keywords": [
+    "telegram",
+    "mini-app",
+    "mining",
+    "game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
