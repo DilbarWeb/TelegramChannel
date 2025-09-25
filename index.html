@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AfghanPawer - Crypto Rewards</title>
+    <title>AfghanPawer - Crypto Investment</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -418,6 +418,7 @@
             font-size: 0.9rem;
             word-break: break-all;
             border: 1px dashed var(--primary);
+            text-align: center;
         }
 
         .recharge-btn {
@@ -584,6 +585,12 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+        }
     </style>
 </head>
 <body>
@@ -600,7 +607,7 @@
                     <i class="fas fa-user"></i>
                 </div>
                 <div class="user-details">
-                    <div class="username" id="username">User</div>
+                    <div class="username" id="username">Loading...</div>
                     <div class="user-id" id="user-id">ID: Loading...</div>
                 </div>
             </div>
@@ -712,14 +719,7 @@
             </div>
             
             <div class="history-list" id="history-list">
-                <!-- History items will be added here dynamically -->
-                <div class="history-item">
-                    <div>
-                        <div class="history-type">Welcome Bonus</div>
-                        <div class="history-date">Just now</div>
-                    </div>
-                    <div class="history-amount positive">+$1.00</div>
-                </div>
+                <div class="loading">Loading transactions...</div>
             </div>
         </div>
 
@@ -735,7 +735,7 @@
                 <div class="modal-title">Recharge Account</div>
                 <button class="close-modal">&times;</button>
             </div>
-            <p>Minimum recharge amount: $8.00</p>
+            <p>Minimum recharge amount: $8.00 (USDT BEP20 only)</p>
             
             <div class="recharge-options">
                 <div class="recharge-option" data-amount="8">
@@ -757,20 +757,12 @@
                 <input type="number" id="custom-amount" min="8" step="0.01" value="20" style="width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px;">
             </div>
             
-            <div style="margin: 15px 0;">
-                <label>Select Network:</label>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button class="ref-action-btn network-btn active" data-network="bep20">BEP20</button>
-                    <button class="ref-action-btn network-btn" data-network="trc20">TRC20</button>
-                </div>
-            </div>
-            
             <div class="recharge-address" id="recharge-address">
                 0x5Dff7E7F810AF7C0f45EF9902c3ba0E8ED3Aa497
             </div>
             
             <p style="font-size: 0.9rem; color: var(--gray); text-align: center;">
-                Send USDT to this address. After 3 network confirmations, your balance will be updated.
+                Send USDT (BEP20) to this address. After 3 network confirmations, your balance will be updated automatically.
             </p>
             
             <button class="recharge-btn" id="confirm-recharge">I've Sent the Payment</button>
@@ -792,16 +784,8 @@
             </div>
             
             <div style="margin: 15px 0;">
-                <label for="withdraw-address">Your USDT Address:</label>
-                <input type="text" id="withdraw-address" placeholder="Enter your USDT address" style="width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px;">
-            </div>
-            
-            <div style="margin: 15px 0;">
-                <label>Select Network:</label>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button class="ref-action-btn network-btn active" data-network="bep20">BEP20</button>
-                    <button class="ref-action-btn network-btn" data-network="trc20">TRC20</button>
-                </div>
+                <label for="withdraw-address">Your USDT BEP20 Address:</label>
+                <input type="text" id="withdraw-address" placeholder="Enter your USDT BEP20 address" style="width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px;">
             </div>
             
             <button class="recharge-btn" id="confirm-withdraw">Request Withdrawal</button>
@@ -832,8 +816,20 @@
         
         // Get user data from Telegram
         const user = tg.initDataUnsafe.user;
-        let userId = user ? user.id.toString() : 'demo_user';
-        let userData = {};
+        let userId = user ? user.id.toString() : null;
+        
+        if (!userId) {
+            // If no user ID from Telegram, show error
+            document.body.innerHTML = `
+                <div class="container">
+                    <div style="text-align: center; padding: 50px 20px;">
+                        <h1 style="color: var(--danger);">Error</h1>
+                        <p>This app must be opened from Telegram. Please open it via @AfghanPawer_Bot</p>
+                    </div>
+                </div>
+            `;
+            throw new Error("User not authenticated via Telegram");
+        }
         
         // VIP levels configuration
         const vipLevels = {
@@ -843,45 +839,56 @@
             4: { price: 30, profit: 4 }
         };
         
-        // USDT addresses for different networks
-        const usdtAddresses = {
-            bep20: "0x5Dff7E7F810AF7C0f45EF9902c3ba0E8ED3Aa497",
-            trc20: "TXYZabcdefghijk1234567890ABCDEFGHIJK"
-        };
+        // USDT BEP20 address for recharges
+        const usdtBep20Address = "0x5Dff7E7F810AF7C0f45EF9902c3ba0E8ED3Aa497";
         
-        // Set user information if available
-        if (user) {
-            document.getElementById('username').textContent = user.first_name || 'User';
-            document.getElementById('user-id').textContent = `ID: ${user.id}`;
-            
-            // Set user avatar if available
-            if (user.photo_url) {
-                document.getElementById('user-avatar').innerHTML = `<img src="${user.photo_url}" alt="User Avatar">`;
-            }
-            
-            // Generate referral code
-            const referralCode = `AFG${user.id}`;
-            document.getElementById('referral-code').textContent = referralCode;
-        } else {
-            // Demo mode for testing without Telegram
-            document.getElementById('username').textContent = 'Demo User';
-            document.getElementById('user-id').textContent = 'ID: 12345';
-            document.getElementById('referral-code').textContent = 'AFG12345';
-            userId = 'demo_user';
+        // Set user information from Telegram
+        document.getElementById('username').textContent = user.first_name || 'User';
+        document.getElementById('user-id').textContent = `ID: ${user.id}`;
+        
+        // Set user avatar if available
+        if (user.photo_url) {
+            document.getElementById('user-avatar').innerHTML = `<img src="${user.photo_url}" alt="User Avatar">`;
         }
+        
+        // Generate referral code
+        const referralCode = `AFG${user.id}`;
+        document.getElementById('referral-code').textContent = referralCode;
+        
+        // User data object
+        let userData = {
+            balance: 0,
+            vipLevel: 0,
+            lastProfitClaim: 0,
+            referrals: 0,
+            referralEarnings: 0,
+            rechargeTotal: 0,
+            withdrawTotal: 0,
+            profitTotal: 0,
+            transactions: []
+        };
         
         // Load user data from Firebase
         function loadUserData() {
             const userRef = database.ref('users/' + userId);
             
-            userRef.once('value').then((snapshot) => {
+            userRef.on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     userData = snapshot.val();
+                    
+                    // Ensure all required fields exist
+                    if (!userData.transactions) userData.transactions = [];
+                    if (!userData.referrals) userData.referrals = 0;
+                    if (!userData.referralEarnings) userData.referralEarnings = 0;
+                    if (!userData.rechargeTotal) userData.rechargeTotal = 0;
+                    if (!userData.withdrawTotal) userData.withdrawTotal = 0;
+                    if (!userData.profitTotal) userData.profitTotal = 0;
+                    
                     updateUI();
                 } else {
                     // Create new user with initial data
                     userData = {
-                        balance: 1.00, // Welcome bonus
+                        balance: 0,
                         vipLevel: 0,
                         lastProfitClaim: 0,
                         referrals: 0,
@@ -889,49 +896,34 @@
                         rechargeTotal: 0,
                         withdrawTotal: 0,
                         profitTotal: 0,
-                        transactions: [
-                            {
-                                type: 'bonus',
-                                amount: 1.00,
-                                date: new Date().toISOString(),
-                                description: 'Welcome Bonus'
-                            }
-                        ]
+                        transactions: [],
+                        telegramData: {
+                            id: user.id,
+                            first_name: user.first_name,
+                            username: user.username,
+                            photo_url: user.photo_url
+                        },
+                        joinedDate: new Date().toISOString()
                     };
                     
                     userRef.set(userData);
                     updateUI();
                 }
-            }).catch((error) => {
+            }, (error) => {
                 console.error('Error loading user data:', error);
-                // Use demo data if Firebase fails
-                userData = {
-                    balance: 1.00,
-                    vipLevel: 0,
-                    lastProfitClaim: 0,
-                    referrals: 5,
-                    referralEarnings: 12.50,
-                    rechargeTotal: 50.00,
-                    withdrawTotal: 15.00,
-                    profitTotal: 3.75,
-                    transactions: [
-                        {
-                            type: 'bonus',
-                            amount: 1.00,
-                            date: new Date().toISOString(),
-                            description: 'Welcome Bonus'
-                        }
-                    ]
-                };
-                updateUI();
+                tg.showPopup({
+                    title: 'Connection Error',
+                    message: 'Could not load your data. Please check your connection.',
+                    buttons: [{type: 'ok'}]
+                });
             });
         }
         
         // Update UI with user data
         function updateUI() {
             document.getElementById('balance').textContent = userData.balance.toFixed(2);
-            document.getElementById('referrals-count').textContent = userData.referrals || 0;
-            document.getElementById('referral-earnings').textContent = (userData.referralEarnings || 0).toFixed(2);
+            document.getElementById('referrals-count').textContent = userData.referrals;
+            document.getElementById('referral-earnings').textContent = userData.referralEarnings.toFixed(2);
             
             // Update VIP badge
             const vipBadge = document.getElementById('vip-badge');
@@ -940,7 +932,7 @@
                 vipBadge.style.background = getVipColor(userData.vipLevel);
             } else {
                 vipBadge.textContent = 'No VIP';
-                vipBadge.style.background = var(--gray);
+                vipBadge.style.background = '#6c757d';
             }
             
             // Update VIP purchase button
@@ -1010,7 +1002,6 @@
         // Update transaction history
         function updateHistory() {
             const historyList = document.getElementById('history-list');
-            historyList.innerHTML = '';
             
             if (!userData.transactions || userData.transactions.length === 0) {
                 historyList.innerHTML = '<div class="history-item">No transactions yet</div>';
@@ -1029,7 +1020,9 @@
             // Sort transactions by date (newest first)
             filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
             
-            // Display transactions
+            // Clear and display transactions
+            historyList.innerHTML = '';
+            
             filteredTransactions.forEach(transaction => {
                 const historyItem = document.createElement('div');
                 historyItem.className = 'history-item';
@@ -1071,6 +1064,11 @@
             const userRef = database.ref('users/' + userId);
             userRef.set(userData).catch((error) => {
                 console.error('Error saving user data:', error);
+                tg.showPopup({
+                    title: 'Error',
+                    message: 'Failed to save data. Please check your connection.',
+                    buttons: [{type: 'ok'}]
+                });
             });
         }
         
@@ -1105,6 +1103,14 @@
         });
         
         withdrawBtn.addEventListener('click', () => {
+            if (userData.balance < 5) {
+                tg.showPopup({
+                    title: 'Insufficient Balance',
+                    message: 'Minimum withdrawal amount is $5.00',
+                    buttons: [{type: 'ok'}]
+                });
+                return;
+            }
             withdrawModal.style.display = 'flex';
         });
         
@@ -1141,19 +1147,6 @@
             rechargeOptions.forEach(opt => opt.classList.remove('selected'));
         });
         
-        // Network selection
-        const networkButtons = document.querySelectorAll('.network-btn');
-        let selectedNetwork = 'bep20';
-        
-        networkButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                networkButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                selectedNetwork = button.getAttribute('data-network');
-                document.getElementById('recharge-address').textContent = usdtAddresses[selectedNetwork];
-            });
-        });
-        
         // Confirm recharge
         document.getElementById('confirm-recharge').addEventListener('click', () => {
             const amount = parseFloat(customAmountInput.value);
@@ -1171,25 +1164,14 @@
             
             tg.showPopup({
                 title: 'Recharge Instructions',
-                message: `Send $${amount} USDT to the ${selectedNetwork.toUpperCase()} address. Your balance will update after 3 network confirmations.`,
+                message: `Send $${amount} USDT (BEP20) to the address shown. Your balance will update after 3 network confirmations.`,
                 buttons: [{type: 'ok'}]
             });
             
             // In a real app, you would wait for blockchain confirmation
-            // For demo purposes, we'll simulate the recharge after a delay
-            setTimeout(() => {
-                userData.balance += amount;
-                userData.rechargeTotal = (userData.rechargeTotal || 0) + amount;
-                addTransaction('recharge', amount, `Recharge (${selectedNetwork.toUpperCase()})`);
-                updateUI();
-                saveUserData();
-                
-                tg.showPopup({
-                    title: 'Recharge Successful',
-                    message: `Your account has been credited with $${amount.toFixed(2)}`,
-                    buttons: [{type: 'ok'}]
-                });
-            }, 3000);
+            // For demo purposes, we'll add a pending transaction
+            addTransaction('pending_recharge', amount, `Pending Recharge - $${amount}`);
+            updateUI();
         });
         
         // Confirm withdrawal
@@ -1215,10 +1197,10 @@
                 return;
             }
             
-            if (!address) {
+            if (!address || address.length < 10) {
                 tg.showPopup({
                     title: 'Error',
-                    message: 'Please enter your USDT address',
+                    message: 'Please enter a valid USDT BEP20 address',
                     buttons: [{type: 'ok'}]
                 });
                 return;
@@ -1228,7 +1210,7 @@
             
             // Process withdrawal
             userData.balance -= amount;
-            userData.withdrawTotal = (userData.withdrawTotal || 0) + amount;
+            userData.withdrawTotal += amount;
             addTransaction('withdraw', -amount, `Withdrawal to ${address.substring(0, 10)}...`);
             updateUI();
             saveUserData();
@@ -1238,6 +1220,10 @@
                 message: `Your withdrawal of $${amount.toFixed(2)} has been submitted. It will be processed within 24 hours.`,
                 buttons: [{type: 'ok'}]
             });
+            
+            // Clear the form
+            document.getElementById('withdraw-amount').value = '5';
+            document.getElementById('withdraw-address').value = '';
         });
         
         // VIP level selection
@@ -1249,6 +1235,11 @@
                 updateUI();
             });
         });
+        
+        // Auto-select first VIP level
+        if (vipLevelElements.length > 0) {
+            vipLevelElements[0].classList.add('selected');
+        }
         
         // Buy VIP
         document.getElementById('buy-vip-btn').addEventListener('click', () => {
@@ -1272,7 +1263,13 @@
                         addTransaction('vip', -vipPrice, `VIP ${vipLevel} Purchase`);
                         
                         // In a real app, you would send the payment to the blockchain address
-                        // For demo, we'll simulate it
+                        // For demo, we'll simulate it with a 10-second delay
+                        tg.showPopup({
+                            title: 'Processing',
+                            message: 'Your VIP purchase is being processed...',
+                            buttons: []
+                        });
+                        
                         setTimeout(() => {
                             updateUI();
                             saveUserData();
@@ -1282,7 +1279,7 @@
                                 message: `Congratulations! You are now VIP ${vipLevel}. You can now claim daily profits.`,
                                 buttons: [{type: 'ok'}]
                             });
-                        }, 2000);
+                        }, 10000); // 10 seconds delay to simulate blockchain processing
                     }
                 });
             }
@@ -1301,7 +1298,7 @@
                     
                     userData.balance += profitAmount;
                     userData.lastProfitClaim = now;
-                    userData.profitTotal = (userData.profitTotal || 0) + profitAmount;
+                    userData.profitTotal += profitAmount;
                     addTransaction('profit', profitAmount, `Daily Profit (VIP ${userData.vipLevel})`);
                     
                     updateUI();
@@ -1320,6 +1317,20 @@
         document.getElementById('copy-ref-btn').addEventListener('click', () => {
             const referralLink = `https://t.me/AfghanPawer_Bot?start=${userId}`;
             navigator.clipboard.writeText(referralLink).then(() => {
+                tg.showPopup({
+                    title: 'Copied!',
+                    message: 'Referral link copied to clipboard',
+                    buttons: [{type: 'ok'}]
+                });
+            }).catch(() => {
+                // Fallback for browsers that don't support clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = referralLink;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
                 tg.showPopup({
                     title: 'Copied!',
                     message: 'Referral link copied to clipboard',
@@ -1356,6 +1367,9 @@
                 updateHistory();
             });
         });
+        
+        // Set recharge address
+        document.getElementById('recharge-address').textContent = usdtBep20Address;
         
         // Initialize the app
         loadUserData();
