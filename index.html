@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AfghanX - Video Sharing</title>
+    <title>AfghanPawer - Crypto Rewards</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         * {
             margin: 0;
@@ -16,681 +15,801 @@
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
+        :root {
+            --primary: #8a2be2;
+            --primary-dark: #6a1cb0;
+            --secondary: #ff6b6b;
+            --accent: #4ecdc4;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --vip1: #ffd700;
+            --vip2: #c0c0c0;
+            --vip3: #cd7f32;
+            --vip4: #e5e4e2;
+        }
+
         body {
-            background-color: #000;
-            color: #fff;
-            overflow-x: hidden;
-        }
-        
-        .container {
-            max-width: 414px;
-            margin: 0 auto;
-            background-color: #000;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
-            position: relative;
+            color: var(--dark);
         }
-        
-        /* Authentication Screens */
-        .auth-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
             padding: 20px;
+        }
+
+        header {
             text-align: center;
-        }
-        
-        .auth-screen h1 {
-            font-size: 32px;
             margin-bottom: 30px;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .auth-form {
-            width: 100%;
-            max-width: 350px;
-        }
-        
-        .auth-form input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #2f2f2f;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
             color: white;
-            font-size: 16px;
+            position: relative;
         }
-        
-        .auth-form button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 5px;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 15px;
-        }
-        
-        .auth-switch {
-            color: #aaa;
-            margin-top: 20px;
-        }
-        
-        .auth-switch span {
-            color: #ff0050;
-            cursor: pointer;
-        }
-        
-        /* Main App */
-        .app {
-            display: none;
-        }
-        
-        /* Top Navigation */
-        .top-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            position: sticky;
-            top: 0;
-            background-color: #000;
-            z-index: 100;
-            border-bottom: 1px solid #2f2f2f;
-        }
-        
+
         .logo {
-            font-size: 24px;
-            font-weight: bold;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
         }
-        
-        .nav-icons {
-            display: flex;
-            gap: 20px;
-        }
-        
-        .nav-icons i {
-            font-size: 20px;
-            cursor: pointer;
-        }
-        
-        /* Tab Bar */
-        .tab-bar {
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            border-bottom: 1px solid #2f2f2f;
-            position: sticky;
-            top: 50px;
-            background-color: #000;
-            z-index: 100;
-        }
-        
-        .tab {
-            padding: 8px 15px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            position: relative;
-        }
-        
-        .tab.active {
-            font-weight: bold;
-        }
-        
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -11px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: #fff;
-        }
-        
-        /* Video Feed */
-        .video-feed {
-            position: relative;
-            height: calc(100vh - 120px);
-            overflow-y: auto;
-            scroll-snap-type: y mandatory;
-        }
-        
-        .video-container {
-            height: 100vh;
-            scroll-snap-align: start;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .video-player {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        
-        .video-info {
-            position: absolute;
-            bottom: 80px;
-            left: 15px;
-            right: 15px;
-            z-index: 10;
-        }
-        
-        .username {
-            font-weight: bold;
-            font-size: 16px;
+
+        h1 {
+            font-size: 1.8rem;
             margin-bottom: 5px;
         }
-        
-        .caption {
-            font-size: 14px;
-            margin-bottom: 10px;
-            max-width: 80%;
-        }
-        
-        .hashtags {
-            font-size: 13px;
-            color: #00f2ea;
-            margin-bottom: 10px;
-        }
-        
-        .sound {
+
+        .user-info {
             display: flex;
             align-items: center;
-            font-size: 13px;
-            color: #ddd;
+            justify-content: center;
+            margin-top: 15px;
         }
-        
-        .sound i {
-            margin-right: 5px;
-        }
-        
-        /* Video Actions */
-        .video-actions {
-            position: absolute;
-            right: 15px;
-            bottom: 100px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            z-index: 10;
-        }
-        
-        .action {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .action-icon {
+
+        .avatar {
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 5px;
-            background-color: rgba(255, 255, 255, 0.1);
-            cursor: pointer;
-        }
-        
-        .action-count {
-            font-size: 13px;
-        }
-        
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            cursor: pointer;
+            background-color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            margin-right: 15px;
+            color: var(--primary);
+            font-size: 1.5rem;
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .vip-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--vip1);
+            color: var(--dark);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
             font-weight: bold;
         }
-        
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: #000;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            border-top: 1px solid #2f2f2f;
-            z-index: 100;
+
+        .balance-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
         }
-        
-        .nav-item {
+
+        .balance-amount {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .balance-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            background: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            font-size: 12px;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
             cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
-        
-        .nav-item i {
-            font-size: 22px;
-            margin-bottom: 3px;
+
+        .action-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
-        
-        .nav-item.active i {
-            color: #ff0050;
+
+        .action-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: var(--primary);
         }
-        
-        /* Upload Screen */
-        .upload-screen {
-            display: none;
-            padding: 20px;
+
+        .action-label {
+            font-weight: 600;
+            color: var(--dark);
         }
-        
-        .upload-form {
-            margin-top: 20px;
-        }
-        
-        .upload-form input, .upload-form textarea {
-            width: 100%;
-            padding: 15px;
+
+        .section-title {
+            font-size: 1.2rem;
             margin-bottom: 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #2f2f2f;
-            color: white;
-            font-size: 16px;
-        }
-        
-        .upload-form textarea {
-            height: 100px;
-            resize: none;
-        }
-        
-        .upload-form button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 5px;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        /* Profile Screen */
-        .profile-screen {
-            display: none;
-            padding: 20px;
-        }
-        
-        .profile-header {
+            color: var(--dark);
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
         }
-        
-        .profile-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin-right: 20px;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-        }
-        
-        .profile-stats {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-        }
-        
-        .stat {
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 18px;
-            font-weight: bold;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: #aaa;
-        }
-        
-        .profile-videos {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-        }
-        
-        .profile-video {
-            aspect-ratio: 9/16;
-            background-color: #2f2f2f;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-        
-        /* Search Screen */
-        .search-screen {
-            display: none;
-            padding: 20px;
-        }
-        
-        .search-bar {
-            display: flex;
-            margin-bottom: 20px;
-        }
-        
-        .search-bar input {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 5px 0 0 5px;
-            background-color: #2f2f2f;
-            color: white;
-            font-size: 16px;
-        }
-        
-        .search-bar button {
-            padding: 15px;
-            border: none;
-            border-radius: 0 5px 5px 0;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            color: white;
-            cursor: pointer;
-        }
-        
-        .search-results {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        
-        .search-result {
-            aspect-ratio: 9/16;
-            background-color: #2f2f2f;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        
-        /* Comments Modal */
-        .comments-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
-            z-index: 1000;
-            padding: 20px;
-        }
-        
-        .comments-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .comments-list {
-            height: 70vh;
-            overflow-y: auto;
-            margin-bottom: 20px;
-        }
-        
-        .comment {
-            display: flex;
-            margin-bottom: 15px;
-        }
-        
-        .comment-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+
+        .section-title i {
             margin-right: 10px;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
+            color: var(--primary);
         }
-        
-        .comment-content {
-            flex: 1;
+
+        .vip-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
         }
-        
-        .comment-username {
+
+        .vip-levels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .vip-level {
+            border: 2px solid #eee;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .vip-level.selected {
+            border-color: var(--primary);
+            background: rgba(138, 43, 226, 0.1);
+        }
+
+        .vip-level.vip1 {
+            border-color: var(--vip1);
+        }
+
+        .vip-level.vip2 {
+            border-color: var(--vip2);
+        }
+
+        .vip-level.vip3 {
+            border-color: var(--vip3);
+        }
+
+        .vip-level.vip4 {
+            border-color: var(--vip4);
+        }
+
+        .vip-name {
             font-weight: bold;
             margin-bottom: 5px;
         }
-        
-        .comment-text {
-            font-size: 14px;
+
+        .vip-price {
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 5px;
         }
-        
-        .comment-input {
-            display: flex;
+
+        .vip-profit {
+            font-size: 0.8rem;
+            color: var(--success);
         }
-        
-        .comment-input input {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 5px 0 0 5px;
-            background-color: #2f2f2f;
+
+        .vip-btn {
+            background: var(--primary);
             color: white;
-            font-size: 16px;
-        }
-        
-        .comment-input button {
-            padding: 15px;
             border: none;
-            border-radius: 0 5px 5px 0;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            color: white;
+            border-radius: 10px;
+            padding: 12px;
+            width: 100%;
+            margin-top: 15px;
+            font-weight: bold;
             cursor: pointer;
+            transition: background 0.3s;
         }
-        
-        /* Edit Profile Modal */
-        .edit-profile-modal {
+
+        .vip-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .vip-btn:disabled {
+            background: var(--gray);
+            cursor: not-allowed;
+        }
+
+        .daily-profit-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .profit-timer {
+            font-size: 1.2rem;
+            margin: 15px 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .profit-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .profit-btn:hover {
+            background: #218838;
+        }
+
+        .profit-btn:disabled {
+            background: var(--gray);
+            cursor: not-allowed;
+        }
+
+        .referral-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .referral-code {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            border: 1px dashed var(--primary);
+        }
+
+        .referral-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .ref-action-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .ref-action-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .referral-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .recharge-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .recharge-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .recharge-option {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .recharge-option:hover {
+            background: #e9ecef;
+        }
+
+        .recharge-option.selected {
+            border-color: var(--primary);
+            background: rgba(138, 43, 226, 0.1);
+        }
+
+        .recharge-amount {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .recharge-bonus {
+            font-size: 0.8rem;
+            color: var(--success);
+        }
+
+        .recharge-address {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            border: 1px dashed var(--primary);
+        }
+
+        .recharge-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .recharge-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .history-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .history-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .history-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .history-tab.active {
+            border-bottom: 2px solid var(--primary);
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-type {
+            font-weight: bold;
+        }
+
+        .history-amount.positive {
+            color: var(--success);
+        }
+
+        .history-amount.negative {
+            color: var(--danger);
+        }
+
+        .history-date {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 0.8rem;
+        }
+
+        /* Modal styles */
+        .modal {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
-            padding: 20px;
+            align-items: center;
+            justify-content: center;
         }
-        
-        .edit-profile-form {
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 90%;
             max-width: 400px;
-            margin: 50px auto;
-            background-color: #1a1a1a;
             padding: 20px;
-            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
         }
-        
-        .edit-profile-form input {
-            width: 100%;
-            padding: 15px;
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #2f2f2f;
-            color: white;
-            font-size: 16px;
         }
-        
-        .edit-profile-form button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 5px;
-            background: linear-gradient(45deg, #ff0050, #00f2ea);
-            color: white;
-            font-size: 16px;
+
+        .modal-title {
+            font-size: 1.2rem;
             font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
         }
-        
-        /* Responsive Styles */
-        @media (max-width: 414px) {
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
             .container {
-                width: 100%;
+                padding: 10px;
+            }
+            
+            .actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .vip-levels {
+                grid-template-columns: 1fr;
+            }
+            
+            .referral-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .recharge-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .referral-actions {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Authentication Screen -->
-        <div class="auth-screen" id="auth-screen">
-            <h1>AfghanX</h1>
-            <div class="auth-form" id="login-form">
-                <input type="email" id="login-email" placeholder="Email">
-                <input type="password" id="login-password" placeholder="Password">
-                <button id="login-btn">Log In</button>
-                <div class="auth-switch">Don't have an account? <span id="show-signup">Sign Up</span></div>
+        <header>
+            <div class="logo">
+                <i class="fas fa-paw"></i>
             </div>
+            <h1>AfghanPawer</h1>
+            <p>Crypto Investment & Rewards</p>
             
-            <div class="auth-form" id="signup-form" style="display: none;">
-                <input type="text" id="signup-username" placeholder="Username (with @)">
-                <input type="email" id="signup-email" placeholder="Email">
-                <input type="password" id="signup-password" placeholder="Password">
-                <button id="signup-btn">Sign Up</button>
-                <div class="auth-switch">Already have an account? <span id="show-login">Log In</span></div>
-            </div>
-        </div>
-        
-        <!-- Main App -->
-        <div class="app" id="app">
-            <!-- Top Navigation -->
-            <div class="top-nav">
-                <div class="logo">AfghanX</div>
-                <div class="nav-icons">
-                    <i class="fas fa-search" id="search-btn"></i>
-                    <i class="fas fa-user" id="profile-btn"></i>
-                </div>
-            </div>
-            
-            <!-- Tab Bar -->
-            <div class="tab-bar">
-                <div class="tab active" data-tab="feed">For You</div>
-                <div class="tab" data-tab="search">Search</div>
-            </div>
-            
-            <!-- Video Feed -->
-            <div class="video-feed" id="feed-screen">
-                <!-- Videos will be loaded here dynamically -->
-            </div>
-            
-            <!-- Search Screen -->
-            <div class="search-screen" id="search-screen">
-                <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="Search users or videos...">
-                    <button id="search-execute"><i class="fas fa-search"></i></button>
-                </div>
-                <div class="search-results" id="search-results">
-                    <!-- Search results will be loaded here -->
-                </div>
-            </div>
-            
-            <!-- Bottom Navigation -->
-            <div class="bottom-nav">
-                <div class="nav-item active" data-tab="feed">
-                    <i class="fas fa-home"></i>
-                    <span>For You</span>
-                </div>
-                <div class="nav-item" data-tab="search">
-                    <i class="fas fa-search"></i>
-                    <span>Search</span>
-                </div>
-                <div class="nav-item" id="upload-btn">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>Upload</span>
-                </div>
-                <div class="nav-item" id="inbox-btn">
-                    <i class="fas fa-inbox"></i>
-                    <span>Inbox</span>
-                </div>
-                <div class="nav-item" data-tab="profile">
+            <div class="user-info">
+                <div class="avatar" id="user-avatar">
                     <i class="fas fa-user"></i>
-                    <span>Profile</span>
+                </div>
+                <div class="user-details">
+                    <div class="username" id="username">User</div>
+                    <div class="user-id" id="user-id">ID: Loading...</div>
+                </div>
+            </div>
+            <div class="vip-badge" id="vip-badge">No VIP</div>
+        </header>
+
+        <div class="balance-card">
+            <div class="balance-label">Your Balance</div>
+            <div class="balance-amount">$<span id="balance">0.00</span></div>
+            <div class="balance-label">Available for withdrawal</div>
+        </div>
+
+        <div class="actions">
+            <div class="action-btn" id="recharge-btn">
+                <div class="action-icon">
+                    <i class="fas fa-plus-circle"></i>
+                </div>
+                <div class="action-label">Recharge</div>
+            </div>
+            <div class="action-btn" id="withdraw-btn">
+                <div class="action-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="action-label">Withdraw</div>
+            </div>
+        </div>
+
+        <div class="vip-section">
+            <div class="section-title">
+                <i class="fas fa-crown"></i>
+                <span>VIP Levels</span>
+            </div>
+            
+            <div class="vip-levels">
+                <div class="vip-level vip1" data-level="1" data-price="8" data-profit="3">
+                    <div class="vip-name">VIP 1</div>
+                    <div class="vip-price">$8</div>
+                    <div class="vip-profit">3% Daily Profit</div>
+                </div>
+                <div class="vip-level vip2" data-level="2" data-price="14" data-profit="3.2">
+                    <div class="vip-name">VIP 2</div>
+                    <div class="vip-price">$14</div>
+                    <div class="vip-profit">3.2% Daily Profit</div>
+                </div>
+                <div class="vip-level vip3" data-level="3" data-price="18" data-profit="3.5">
+                    <div class="vip-name">VIP 3</div>
+                    <div class="vip-price">$18</div>
+                    <div class="vip-profit">3.5% Daily Profit</div>
+                </div>
+                <div class="vip-level vip4" data-level="4" data-price="30" data-profit="4">
+                    <div class="vip-name">VIP 4</div>
+                    <div class="vip-price">$30</div>
+                    <div class="vip-profit">4% Daily Profit</div>
+                </div>
+            </div>
+            
+            <button class="vip-btn" id="buy-vip-btn" disabled>Buy VIP</button>
+        </div>
+
+        <div class="daily-profit-section">
+            <div class="section-title">
+                <i class="fas fa-coins"></i>
+                <span>Daily Profit</span>
+            </div>
+            
+            <div class="profit-timer" id="profit-timer">Next profit available in: 24:00:00</div>
+            
+            <button class="profit-btn" id="profit-btn" disabled>Claim Daily Profit</button>
+        </div>
+
+        <div class="referral-section">
+            <div class="section-title">
+                <i class="fas fa-user-friends"></i>
+                <span>Referral System</span>
+            </div>
+            
+            <p>Invite friends and earn 10% of their investments!</p>
+            
+            <div class="referral-code" id="referral-code">Loading...</div>
+            
+            <div class="referral-actions">
+                <button class="ref-action-btn" id="copy-ref-btn">Copy Link</button>
+                <button class="ref-action-btn" id="share-ref-btn">Share on Telegram</button>
+            </div>
+            
+            <div class="referral-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="referrals-count">0</div>
+                    <div class="stat-label">Total Referrals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">$<span id="referral-earnings">0.00</span></div>
+                    <div class="stat-label">Referral Earnings</div>
                 </div>
             </div>
         </div>
-        
-        <!-- Comments Modal -->
-        <div class="comments-modal" id="comments-modal">
-            <div class="comments-header">
-                <h2>Comments</h2>
-                <i class="fas fa-times" id="close-comments"></i>
+
+        <div class="history-section">
+            <div class="section-title">
+                <i class="fas fa-history"></i>
+                <span>Transaction History</span>
             </div>
-            <div class="comments-list" id="comments-list">
-                <!-- Comments will be loaded here -->
+            
+            <div class="history-tabs">
+                <div class="history-tab active" data-tab="all">All</div>
+                <div class="history-tab" data-tab="recharge">Recharge</div>
+                <div class="history-tab" data-tab="withdraw">Withdraw</div>
+                <div class="history-tab" data-tab="profit">Profit</div>
             </div>
-            <div class="comment-input">
-                <input type="text" id="comment-text" placeholder="Add a comment...">
-                <button id="post-comment">Post</button>
+            
+            <div class="history-list" id="history-list">
+                <!-- History items will be added here dynamically -->
+                <div class="history-item">
+                    <div>
+                        <div class="history-type">Welcome Bonus</div>
+                        <div class="history-date">Just now</div>
+                    </div>
+                    <div class="history-amount positive">+$1.00</div>
+                </div>
             </div>
         </div>
-        
-        <!-- Edit Profile Modal -->
-        <div class="edit-profile-modal" id="edit-profile-modal">
-            <div class="edit-profile-form">
-                <h2>Edit Profile</h2>
-                <input type="text" id="edit-username" placeholder="Username">
-                <input type="file" id="edit-avatar" accept="image/*">
-                <button id="save-profile">Save Changes</button>
-                <button id="close-edit-profile" style="background: #555;">Cancel</button>
+
+        <footer>
+            <p>AfghanPawer &copy; 2023 - All rights reserved</p>
+        </footer>
+    </div>
+
+    <!-- Recharge Modal -->
+    <div class="modal" id="recharge-modal">
+        <div class="modal-content fade-in">
+            <div class="modal-header">
+                <div class="modal-title">Recharge Account</div>
+                <button class="close-modal">&times;</button>
             </div>
+            <p>Minimum recharge amount: $8.00</p>
+            
+            <div class="recharge-options">
+                <div class="recharge-option" data-amount="8">
+                    <div class="recharge-amount">$8</div>
+                </div>
+                <div class="recharge-option selected" data-amount="20">
+                    <div class="recharge-amount">$20</div>
+                </div>
+                <div class="recharge-option" data-amount="50">
+                    <div class="recharge-amount">$50</div>
+                </div>
+                <div class="recharge-option" data-amount="100">
+                    <div class="recharge-amount">$100</div>
+                </div>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <label for="custom-amount">Or enter custom amount:</label>
+                <input type="number" id="custom-amount" min="8" step="0.01" value="20" style="width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <label>Select Network:</label>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="ref-action-btn network-btn active" data-network="bep20">BEP20</button>
+                    <button class="ref-action-btn network-btn" data-network="trc20">TRC20</button>
+                </div>
+            </div>
+            
+            <div class="recharge-address" id="recharge-address">
+                0x5Dff7E7F810AF7C0f45EF9902c3ba0E8ED3Aa497
+            </div>
+            
+            <p style="font-size: 0.9rem; color: var(--gray); text-align: center;">
+                Send USDT to this address. After 3 network confirmations, your balance will be updated.
+            </p>
+            
+            <button class="recharge-btn" id="confirm-recharge">I've Sent the Payment</button>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal" id="withdraw-modal">
+        <div class="modal-content fade-in">
+            <div class="modal-header">
+                <div class="modal-title">Withdraw Funds</div>
+                <button class="close-modal">&times;</button>
+            </div>
+            <p>Minimum withdrawal amount: $5.00</p>
+            
+            <div style="margin: 15px 0;">
+                <label for="withdraw-amount">Amount:</label>
+                <input type="number" id="withdraw-amount" min="5" step="0.01" value="5" style="width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <label for="withdraw-address">Your USDT Address:</label>
+                <input type="text" id="withdraw-address" placeholder="Enter your USDT address" style="width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <label>Select Network:</label>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="ref-action-btn network-btn active" data-network="bep20">BEP20</button>
+                    <button class="ref-action-btn network-btn" data-network="trc20">TRC20</button>
+                </div>
+            </div>
+            
+            <button class="recharge-btn" id="confirm-withdraw">Request Withdrawal</button>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyD4UbW_Iy4kUWH3V70Q1mWCI4-_KFk6ku4",
             authDomain: "onlinewark-a0147.firebaseapp.com",
@@ -703,765 +822,546 @@
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const storage = firebase.storage();
+        const database = firebase.database();
 
-        // DOM Elements
-        const authScreen = document.getElementById('auth-screen');
-        const app = document.getElementById('app');
-        const loginForm = document.getElementById('login-form');
-        const signupForm = document.getElementById('signup-form');
-        const showSignup = document.getElementById('show-signup');
-        const showLogin = document.getElementById('show-login');
-        const loginBtn = document.getElementById('login-btn');
-        const signupBtn = document.getElementById('signup-btn');
+        // Initialize Telegram Web App
+        let tg = window.Telegram.WebApp;
         
-        const tabs = document.querySelectorAll('.tab');
-        const navItems = document.querySelectorAll('.nav-item');
-        const feedScreen = document.getElementById('feed-screen');
-        const searchScreen = document.getElementById('search-screen');
-        const searchBtn = document.getElementById('search-btn');
-        const profileBtn = document.getElementById('profile-btn');
-        const searchInput = document.getElementById('search-input');
-        const searchExecute = document.getElementById('search-execute');
-        const searchResults = document.getElementById('search-results');
-        const uploadBtn = document.getElementById('upload-btn');
-        const inboxBtn = document.getElementById('inbox-btn');
+        // Expand the app to full height
+        tg.expand();
         
-        const commentsModal = document.getElementById('comments-modal');
-        const closeComments = document.getElementById('close-comments');
-        const commentsList = document.getElementById('comments-list');
-        const commentText = document.getElementById('comment-text');
-        const postComment = document.getElementById('post-comment');
+        // Get user data from Telegram
+        const user = tg.initDataUnsafe.user;
+        let userId = user ? user.id.toString() : 'demo_user';
+        let userData = {};
         
-        const editProfileModal = document.getElementById('edit-profile-modal');
-        const editUsername = document.getElementById('edit-username');
-        const editAvatar = document.getElementById('edit-avatar');
-        const saveProfile = document.getElementById('save-profile');
-        const closeEditProfile = document.getElementById('close-edit-profile');
+        // VIP levels configuration
+        const vipLevels = {
+            1: { price: 8, profit: 3 },
+            2: { price: 14, profit: 3.2 },
+            3: { price: 18, profit: 3.5 },
+            4: { price: 30, profit: 4 }
+        };
         
-        // Global Variables
-        let currentUser = null;
-        let currentVideoId = null;
-        let videos = [];
-
-        // Authentication Functions
-        showSignup.addEventListener('click', () => {
-            loginForm.style.display = 'none';
-            signupForm.style.display = 'block';
-        });
-
-        showLogin.addEventListener('click', () => {
-            signupForm.style.display = 'none';
-            loginForm.style.display = 'block';
-        });
-
-        signupBtn.addEventListener('click', async () => {
-            let username = document.getElementById('signup-username').value;
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
+        // USDT addresses for different networks
+        const usdtAddresses = {
+            bep20: "0x5Dff7E7F810AF7C0f45EF9902c3ba0E8ED3Aa497",
+            trc20: "TXYZabcdefghijk1234567890ABCDEFGHIJK"
+        };
+        
+        // Set user information if available
+        if (user) {
+            document.getElementById('username').textContent = user.first_name || 'User';
+            document.getElementById('user-id').textContent = `ID: ${user.id}`;
             
-            // Add @ if not present
-            if (!username.startsWith('@')) {
-                username = '@' + username;
+            // Set user avatar if available
+            if (user.photo_url) {
+                document.getElementById('user-avatar').innerHTML = `<img src="${user.photo_url}" alt="User Avatar">`;
             }
             
-            try {
-                // Check if username already exists
-                const usernameSnapshot = await db.collection('users').where('username', '==', username).get();
-                if (!usernameSnapshot.empty) {
-                    alert('Username already exists. Please choose a different one.');
-                    return;
-                }
-                
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                
-                // Create user document in Firestore
-                await db.collection('users').doc(user.uid).set({
-                    username: username,
-                    email: email,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    followers: 0,
-                    following: 0,
-                    likes: 0,
-                    videos: 0,
-                    avatar: null
-                });
-                
-                alert('Account created successfully!');
-                showLogin.click();
-            } catch (error) {
-                alert('Error creating account: ' + error.message);
-            }
-        });
-
-        loginBtn.addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+            // Generate referral code
+            const referralCode = `AFG${user.id}`;
+            document.getElementById('referral-code').textContent = referralCode;
+        } else {
+            // Demo mode for testing without Telegram
+            document.getElementById('username').textContent = 'Demo User';
+            document.getElementById('user-id').textContent = 'ID: 12345';
+            document.getElementById('referral-code').textContent = 'AFG12345';
+            userId = 'demo_user';
+        }
+        
+        // Load user data from Firebase
+        function loadUserData() {
+            const userRef = database.ref('users/' + userId);
             
-            try {
-                await auth.signInWithEmailAndPassword(email, password);
-            } catch (error) {
-                alert('Error signing in: ' + error.message);
-            }
-        });
-
-        // Auth State Observer
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                
-                // Switch to app view
-                authScreen.style.display = 'none';
-                app.style.display = 'block';
-                
-                // Load user's feed
-                loadFeed();
-            } else {
-                currentUser = null;
-                authScreen.style.display = 'flex';
-                app.style.display = 'none';
-            }
-        });
-
-        // Navigation Functions
-        function showScreen(screenName) {
-            // Hide all screens
-            feedScreen.style.display = 'none';
-            searchScreen.style.display = 'none';
-            
-            // Show selected screen
-            if (screenName === 'feed') {
-                feedScreen.style.display = 'block';
-                loadFeed();
-            } else if (screenName === 'search') {
-                searchScreen.style.display = 'block';
-            } else if (screenName === 'profile') {
-                showProfile();
-            }
-            
-            // Update active tabs
-            tabs.forEach(tab => {
-                if (tab.getAttribute('data-tab') === screenName) {
-                    tab.classList.add('active');
+            userRef.once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    userData = snapshot.val();
+                    updateUI();
                 } else {
-                    tab.classList.remove('active');
+                    // Create new user with initial data
+                    userData = {
+                        balance: 1.00, // Welcome bonus
+                        vipLevel: 0,
+                        lastProfitClaim: 0,
+                        referrals: 0,
+                        referralEarnings: 0,
+                        rechargeTotal: 0,
+                        withdrawTotal: 0,
+                        profitTotal: 0,
+                        transactions: [
+                            {
+                                type: 'bonus',
+                                amount: 1.00,
+                                date: new Date().toISOString(),
+                                description: 'Welcome Bonus'
+                            }
+                        ]
+                    };
+                    
+                    userRef.set(userData);
+                    updateUI();
                 }
-            });
-            
-            navItems.forEach(item => {
-                if (item.getAttribute('data-tab') === screenName) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
-                }
+            }).catch((error) => {
+                console.error('Error loading user data:', error);
+                // Use demo data if Firebase fails
+                userData = {
+                    balance: 1.00,
+                    vipLevel: 0,
+                    lastProfitClaim: 0,
+                    referrals: 5,
+                    referralEarnings: 12.50,
+                    rechargeTotal: 50.00,
+                    withdrawTotal: 15.00,
+                    profitTotal: 3.75,
+                    transactions: [
+                        {
+                            type: 'bonus',
+                            amount: 1.00,
+                            date: new Date().toISOString(),
+                            description: 'Welcome Bonus'
+                        }
+                    ]
+                };
+                updateUI();
             });
         }
-
-        // Tab click events
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const screenName = tab.getAttribute('data-tab');
-                showScreen(screenName);
-            });
-        });
-
-        // Bottom nav click events
-        navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const screenName = item.getAttribute('data-tab');
-                showScreen(screenName);
-            });
-        });
-
-        // Search button click event
-        searchBtn.addEventListener('click', () => {
-            showScreen('search');
-        });
-
-        // Profile button click event
-        profileBtn.addEventListener('click', () => {
-            showProfile();
-        });
-
-        // Upload button click event
-        uploadBtn.addEventListener('click', () => {
-            uploadVideo();
-        });
-
-        // Show profile screen
-        function showProfile() {
-            // Create profile screen dynamically
-            const existingProfile = document.getElementById('dynamic-profile');
-            if (existingProfile) {
-                existingProfile.remove();
-            }
+        
+        // Update UI with user data
+        function updateUI() {
+            document.getElementById('balance').textContent = userData.balance.toFixed(2);
+            document.getElementById('referrals-count').textContent = userData.referrals || 0;
+            document.getElementById('referral-earnings').textContent = (userData.referralEarnings || 0).toFixed(2);
             
-            const profileScreen = document.createElement('div');
-            profileScreen.id = 'dynamic-profile';
-            profileScreen.className = 'profile-screen';
-            profileScreen.style.display = 'block';
-            profileScreen.style.position = 'fixed';
-            profileScreen.style.top = '0';
-            profileScreen.style.left = '0';
-            profileScreen.style.width = '100%';
-            profileScreen.style.height = '100%';
-            profileScreen.style.background = '#000';
-            profileScreen.style.zIndex = '200';
-            profileScreen.style.padding = '20px';
-            profileScreen.style.overflowY = 'auto';
-            
-            // Close button
-            const closeBtn = document.createElement('i');
-            closeBtn.className = 'fas fa-times';
-            closeBtn.style.position = 'absolute';
-            closeBtn.style.top = '20px';
-            closeBtn.style.right = '20px';
-            closeBtn.style.fontSize = '24px';
-            closeBtn.style.cursor = 'pointer';
-            closeBtn.addEventListener('click', () => {
-                profileScreen.remove();
-                showScreen('feed');
-            });
-            
-            profileScreen.appendChild(closeBtn);
-            
-            // Load profile content
-            loadProfileContent(profileScreen);
-            
-            document.body.appendChild(profileScreen);
-        }
-
-        // Load profile content
-        async function loadProfileContent(container) {
-            if (!currentUser) return;
-            
-            const userDoc = await db.collection('users').doc(currentUser.uid).get();
-            const userData = userDoc.data();
-            
-            // Profile header
-            const profileHeader = document.createElement('div');
-            profileHeader.className = 'profile-header';
-            
-            const profileAvatar = document.createElement('div');
-            profileAvatar.className = 'profile-avatar';
-            if (userData.avatar) {
-                profileAvatar.style.backgroundImage = `url(${userData.avatar})`;
-                profileAvatar.style.backgroundSize = 'cover';
-                profileAvatar.style.backgroundPosition = 'center';
-                profileAvatar.innerHTML = '';
+            // Update VIP badge
+            const vipBadge = document.getElementById('vip-badge');
+            if (userData.vipLevel > 0) {
+                vipBadge.textContent = `VIP ${userData.vipLevel}`;
+                vipBadge.style.background = getVipColor(userData.vipLevel);
             } else {
-                profileAvatar.innerHTML = userData.username.charAt(1).toUpperCase();
+                vipBadge.textContent = 'No VIP';
+                vipBadge.style.background = var(--gray);
             }
-            profileAvatar.addEventListener('click', () => {
-                editProfileModal.style.display = 'block';
-            });
             
-            const profileInfo = document.createElement('div');
-            profileInfo.innerHTML = `
-                <h2>${userData.username}</h2>
-                <button id="edit-profile-btn" style="padding: 8px 15px; background: #333; color: white; border: none; border-radius: 5px; margin-top: 10px;">Edit Profile</button>
-            `;
-            
-            profileHeader.appendChild(profileAvatar);
-            profileHeader.appendChild(profileInfo);
-            container.appendChild(profileHeader);
-            
-            // Profile stats
-            const profileStats = document.createElement('div');
-            profileStats.className = 'profile-stats';
-            profileStats.innerHTML = `
-                <div class="stat">
-                    <div class="stat-value">${userData.videos || 0}</div>
-                    <div class="stat-label">Videos</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">${userData.followers || 0}</div>
-                    <div class="stat-label">Followers</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">${userData.following || 0}</div>
-                    <div class="stat-label">Following</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">${userData.likes || 0}</div>
-                    <div class="stat-label">Likes</div>
-                </div>
-            `;
-            container.appendChild(profileStats);
-            
-            // Profile videos
-            const profileVideos = document.createElement('div');
-            profileVideos.className = 'profile-videos';
-            profileVideos.id = 'profile-videos-container';
-            container.appendChild(profileVideos);
-            
-            // Load user's videos
-            const videosSnapshot = await db.collection('videos')
-                .where('userId', '==', currentUser.uid)
-                .orderBy('createdAt', 'desc')
-                .get();
-            
-            videosSnapshot.forEach(doc => {
-                const video = doc.data();
-                const videoElement = document.createElement('div');
-                videoElement.className = 'profile-video';
-                videoElement.innerHTML = '<i class="fas fa-play"></i>';
-                videoElement.style.background = 'linear-gradient(45deg, #ff0050, #00f2ea)';
-                videoElement.addEventListener('click', () => {
-                    // In a real app, this would play the video
-                    alert('Playing video: ' + video.caption);
-                });
-                profileVideos.appendChild(videoElement);
-            });
-            
-            // Edit profile button
-            document.getElementById('edit-profile-btn').addEventListener('click', () => {
-                editProfileModal.style.display = 'block';
-                editUsername.value = userData.username;
-            });
-        }
-
-        // Load Video Feed
-        async function loadFeed() {
-            feedScreen.innerHTML = '';
-            
-            // Get videos from Firestore
-            const videosSnapshot = await db.collection('videos')
-                .orderBy('createdAt', 'desc')
-                .limit(10)
-                .get();
-            
-            videos = [];
-            videosSnapshot.forEach(doc => {
-                videos.push({ id: doc.id, ...doc.data() });
-            });
-            
-            // Create video elements
-            videos.forEach(video => {
-                const videoContainer = document.createElement('div');
-                videoContainer.className = 'video-container';
-                videoContainer.setAttribute('data-video-id', video.id);
+            // Update VIP purchase button
+            const buyVipBtn = document.getElementById('buy-vip-btn');
+            const selectedVip = document.querySelector('.vip-level.selected');
+            if (selectedVip) {
+                const vipLevel = parseInt(selectedVip.getAttribute('data-level'));
+                const vipPrice = parseFloat(selectedVip.getAttribute('data-price'));
                 
-                // Create video placeholder (in a real app, this would be an actual video player)
-                const videoPlaceholder = document.createElement('div');
-                videoPlaceholder.className = 'video-player';
-                videoPlaceholder.style.background = 'linear-gradient(45deg, #ff0050, #00f2ea)';
-                videoPlaceholder.style.display = 'flex';
-                videoPlaceholder.style.alignItems = 'center';
-                videoPlaceholder.style.justifyContent = 'center';
-                videoPlaceholder.style.fontSize = '24px';
-                videoPlaceholder.style.fontWeight = 'bold';
-                videoPlaceholder.style.color = 'white';
-                videoPlaceholder.innerHTML = `
-                    <div style="text-align: center;">
-                        <i class="fas fa-play" style="font-size: 48px; margin-bottom: 10px;"></i>
-                        <div>${video.caption.substring(0, 30)}...</div>
-                    </div>
-                `;
-                
-                // Video info
-                const videoInfo = document.createElement('div');
-                videoInfo.className = 'video-info';
-                
-                const username = document.createElement('div');
-                username.className = 'username';
-                username.textContent = video.username;
-                
-                const caption = document.createElement('div');
-                caption.className = 'caption';
-                caption.textContent = video.caption;
-                
-                const hashtags = document.createElement('div');
-                hashtags.className = 'hashtags';
-                hashtags.textContent = video.hashtags;
-                
-                const sound = document.createElement('div');
-                sound.className = 'sound';
-                sound.innerHTML = '<i class="fas fa-music"></i><span>Original Sound</span>';
-                
-                videoInfo.appendChild(username);
-                videoInfo.appendChild(caption);
-                videoInfo.appendChild(hashtags);
-                videoInfo.appendChild(sound);
-                
-                // Video actions
-                const videoActions = document.createElement('div');
-                videoActions.className = 'video-actions';
-                
-                // Avatar
-                const avatar = document.createElement('div');
-                avatar.className = 'avatar';
-                avatar.innerHTML = video.username.charAt(1).toUpperCase();
-                avatar.addEventListener('click', () => {
-                    // In a real app, this would navigate to the user's profile
-                    showProfile();
-                });
-                
-                // Like button
-                const likeAction = document.createElement('div');
-                likeAction.className = 'action';
-                
-                const likeIcon = document.createElement('div');
-                likeIcon.className = 'action-icon';
-                likeIcon.innerHTML = '<i class="fas fa-heart"></i>';
-                likeIcon.addEventListener('click', () => likeVideo(video.id));
-                
-                const likeCount = document.createElement('div');
-                likeCount.className = 'action-count';
-                likeCount.textContent = video.likes || 0;
-                likeCount.id = `likes-${video.id}`;
-                
-                likeAction.appendChild(likeIcon);
-                likeAction.appendChild(likeCount);
-                
-                // Comment button
-                const commentAction = document.createElement('div');
-                commentAction.className = 'action';
-                
-                const commentIcon = document.createElement('div');
-                commentIcon.className = 'action-icon';
-                commentIcon.innerHTML = '<i class="fas fa-comment"></i>';
-                commentIcon.addEventListener('click', () => openComments(video.id));
-                
-                const commentCount = document.createElement('div');
-                commentCount.className = 'action-count';
-                commentCount.textContent = video.comments || 0;
-                commentCount.id = `comments-${video.id}`;
-                
-                commentAction.appendChild(commentIcon);
-                commentAction.appendChild(commentCount);
-                
-                // Share button
-                const shareAction = document.createElement('div');
-                shareAction.className = 'action';
-                
-                const shareIcon = document.createElement('div');
-                shareIcon.className = 'action-icon';
-                shareIcon.innerHTML = '<i class="fas fa-share"></i>';
-                shareIcon.addEventListener('click', () => shareVideo(video.id));
-                
-                const shareCount = document.createElement('div');
-                shareCount.className = 'action-count';
-                shareCount.textContent = video.shares || 0;
-                shareCount.id = `shares-${video.id}`;
-                
-                shareAction.appendChild(shareIcon);
-                shareAction.appendChild(shareCount);
-                
-                videoActions.appendChild(avatar);
-                videoActions.appendChild(likeAction);
-                videoActions.appendChild(commentAction);
-                videoActions.appendChild(shareAction);
-                
-                videoContainer.appendChild(videoPlaceholder);
-                videoContainer.appendChild(videoInfo);
-                videoContainer.appendChild(videoActions);
-                
-                feedScreen.appendChild(videoContainer);
-            });
-        }
-
-        // Like a video
-        async function likeVideo(videoId) {
-            if (!currentUser) return;
-            
-            const videoRef = db.collection('videos').doc(videoId);
-            const videoDoc = await videoRef.get();
-            const videoData = videoDoc.data();
-            
-            const currentLikes = videoData.likes || 0;
-            await videoRef.update({ likes: currentLikes + 1 });
-            
-            // Update UI
-            document.getElementById(`likes-${videoId}`).textContent = currentLikes + 1;
-            
-            // Add to user's liked videos
-            await db.collection('users').doc(currentUser.uid).update({
-                likes: firebase.firestore.FieldValue.increment(1)
-            });
-        }
-
-        // Share a video
-        async function shareVideo(videoId) {
-            if (!currentUser) return;
-            
-            const videoRef = db.collection('videos').doc(videoId);
-            const videoDoc = await videoRef.get();
-            const videoData = videoDoc.data();
-            
-            const currentShares = videoData.shares || 0;
-            await videoRef.update({ shares: currentShares + 1 });
-            
-            // Update UI
-            document.getElementById(`shares-${videoId}`).textContent = currentShares + 1;
-            
-            alert('Video shared successfully!');
-        }
-
-        // Open comments modal
-        async function openComments(videoId) {
-            currentVideoId = videoId;
-            commentsModal.style.display = 'block';
-            commentsList.innerHTML = '';
-            
-            // Load comments
-            const commentsSnapshot = await db.collection('videos').doc(videoId)
-                .collection('comments').orderBy('createdAt', 'desc').get();
-            
-            commentsSnapshot.forEach(doc => {
-                const comment = doc.data();
-                const commentElement = document.createElement('div');
-                commentElement.className = 'comment';
-                
-                const commentAvatar = document.createElement('div');
-                commentAvatar.className = 'comment-avatar';
-                commentAvatar.innerHTML = comment.username.charAt(1).toUpperCase();
-                
-                const commentContent = document.createElement('div');
-                commentContent.className = 'comment-content';
-                
-                const commentUsername = document.createElement('div');
-                commentUsername.className = 'comment-username';
-                commentUsername.textContent = comment.username;
-                
-                const commentText = document.createElement('div');
-                commentText.className = 'comment-text';
-                commentText.textContent = comment.text;
-                
-                commentContent.appendChild(commentUsername);
-                commentContent.appendChild(commentText);
-                
-                commentElement.appendChild(commentAvatar);
-                commentElement.appendChild(commentContent);
-                
-                commentsList.appendChild(commentElement);
-            });
-        }
-
-        // Close comments modal
-        closeComments.addEventListener('click', () => {
-            commentsModal.style.display = 'none';
-        });
-
-        // Post a comment
-        postComment.addEventListener('click', async () => {
-            if (!currentUser || !currentVideoId) return;
-            
-            const text = commentText.value.trim();
-            if (!text) return;
-            
-            // Get username
-            const userDoc = await db.collection('users').doc(currentUser.uid).get();
-            const userData = userDoc.data();
-            
-            // Add comment to Firestore
-            await db.collection('videos').doc(currentVideoId)
-                .collection('comments').add({
-                    userId: currentUser.uid,
-                    username: userData.username,
-                    text: text,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            
-            // Update comment count
-            const videoRef = db.collection('videos').doc(currentVideoId);
-            const videoDoc = await videoRef.get();
-            const videoData = videoDoc.data();
-            
-            const currentComments = videoData.comments || 0;
-            await videoRef.update({ comments: currentComments + 1 });
-            
-            // Update UI
-            document.getElementById(`comments-${currentVideoId}`).textContent = currentComments + 1;
-            
-            // Clear input
-            commentText.value = '';
-            
-            // Reload comments
-            openComments(currentVideoId);
-        });
-
-        // Upload video
-        function uploadVideo() {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = 'video/*';
-            fileInput.click();
-            
-            fileInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const caption = prompt('Enter video caption:');
-                if (!caption) return;
-                
-                const hashtags = prompt('Enter hashtags (e.g., #viral #foryou):') || '';
-                
-                try {
-                    // Get username
-                    const userDoc = await db.collection('users').doc(currentUser.uid).get();
-                    const userData = userDoc.data();
-                    
-                    // Upload video to Firebase Storage
-                    const storageRef = storage.ref();
-                    const videoRef = storageRef.child('videos/' + currentUser.uid + '/' + Date.now() + '_' + file.name);
-                    await videoRef.put(file);
-                    const videoUrl = await videoRef.getDownloadURL();
-                    
-                    // Add video to Firestore
-                    await db.collection('videos').add({
-                        userId: currentUser.uid,
-                        username: userData.username,
-                        videoUrl: videoUrl,
-                        caption: caption,
-                        hashtags: hashtags,
-                        likes: 0,
-                        comments: 0,
-                        shares: 0,
-                        views: 0,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    // Update user's video count
-                    await db.collection('users').doc(currentUser.uid).update({
-                        videos: firebase.firestore.FieldValue.increment(1)
-                    });
-                    
-                    alert('Video uploaded successfully!');
-                    loadFeed();
-                } catch (error) {
-                    alert('Error uploading video: ' + error.message);
+                if (userData.balance >= vipPrice && userData.vipLevel < vipLevel) {
+                    buyVipBtn.disabled = false;
+                    buyVipBtn.textContent = `Buy VIP ${vipLevel} - $${vipPrice}`;
+                } else {
+                    buyVipBtn.disabled = true;
+                    if (userData.vipLevel >= vipLevel) {
+                        buyVipBtn.textContent = 'Already Purchased';
+                    } else {
+                        buyVipBtn.textContent = 'Insufficient Balance';
+                    }
                 }
-            });
-        }
-
-        // Edit profile
-        saveProfile.addEventListener('click', async () => {
-            if (!currentUser) return;
+            }
             
-            const newUsername = editUsername.value.trim();
-            if (!newUsername) {
-                alert('Please enter a username');
+            // Update profit claim button
+            const profitBtn = document.getElementById('profit-btn');
+            const profitTimer = document.getElementById('profit-timer');
+            
+            if (userData.vipLevel > 0) {
+                const now = new Date().getTime();
+                const lastClaim = userData.lastProfitClaim || 0;
+                const nextClaimTime = lastClaim + (24 * 60 * 60 * 1000); // 24 hours
+                
+                if (now >= nextClaimTime) {
+                    profitBtn.disabled = false;
+                    profitBtn.textContent = `Claim Daily Profit (${vipLevels[userData.vipLevel].profit}%)`;
+                    profitTimer.textContent = 'Profit available now!';
+                } else {
+                    profitBtn.disabled = true;
+                    const timeLeft = nextClaimTime - now;
+                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    
+                    profitTimer.textContent = `Next profit available in: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    profitBtn.textContent = 'Profit Claimed Today';
+                }
+            } else {
+                profitBtn.disabled = true;
+                profitBtn.textContent = 'VIP Required';
+                profitTimer.textContent = 'Purchase VIP to earn daily profits';
+            }
+            
+            // Update transaction history
+            updateHistory();
+        }
+        
+        // Get VIP color based on level
+        function getVipColor(level) {
+            switch(level) {
+                case 1: return '#ffd700';
+                case 2: return '#c0c0c0';
+                case 3: return '#cd7f32';
+                case 4: return '#e5e4e2';
+                default: return '#6c757d';
+            }
+        }
+        
+        // Update transaction history
+        function updateHistory() {
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
+            
+            if (!userData.transactions || userData.transactions.length === 0) {
+                historyList.innerHTML = '<div class="history-item">No transactions yet</div>';
                 return;
             }
             
-            // Add @ if not present
-            const formattedUsername = newUsername.startsWith('@') ? newUsername : '@' + newUsername;
+            // Get active tab
+            const activeTab = document.querySelector('.history-tab.active').getAttribute('data-tab');
             
-            try {
-                // Check if username already exists (excluding current user)
-                const usernameSnapshot = await db.collection('users')
-                    .where('username', '==', formattedUsername)
-                    .where('uid', '!=', currentUser.uid)
-                    .get();
+            // Filter transactions based on active tab
+            const filteredTransactions = userData.transactions.filter(transaction => {
+                if (activeTab === 'all') return true;
+                return transaction.type === activeTab;
+            });
+            
+            // Sort transactions by date (newest first)
+            filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Display transactions
+            filteredTransactions.forEach(transaction => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
                 
-                if (!usernameSnapshot.empty) {
-                    alert('Username already exists. Please choose a different one.');
-                    return;
-                }
+                const amountClass = transaction.amount >= 0 ? 'positive' : 'negative';
+                const amountSign = transaction.amount >= 0 ? '+' : '';
                 
-                // Update username
-                await db.collection('users').doc(currentUser.uid).update({
-                    username: formattedUsername
+                historyItem.innerHTML = `
+                    <div>
+                        <div class="history-type">${transaction.description}</div>
+                        <div class="history-date">${formatDate(transaction.date)}</div>
+                    </div>
+                    <div class="history-amount ${amountClass}">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</div>
+                `;
+                
+                historyList.appendChild(historyItem);
+            });
+        }
+        
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            if (diffHours < 24) return `${diffHours} hours ago`;
+            if (diffDays < 7) return `${diffDays} days ago`;
+            
+            return date.toLocaleDateString();
+        }
+        
+        // Save user data to Firebase
+        function saveUserData() {
+            const userRef = database.ref('users/' + userId);
+            userRef.set(userData).catch((error) => {
+                console.error('Error saving user data:', error);
+            });
+        }
+        
+        // Add transaction to history
+        function addTransaction(type, amount, description) {
+            if (!userData.transactions) {
+                userData.transactions = [];
+            }
+            
+            userData.transactions.push({
+                type: type,
+                amount: amount,
+                date: new Date().toISOString(),
+                description: description
+            });
+            
+            // Keep only last 50 transactions
+            if (userData.transactions.length > 50) {
+                userData.transactions = userData.transactions.slice(-50);
+            }
+        }
+        
+        // Modal functionality
+        const rechargeBtn = document.getElementById('recharge-btn');
+        const withdrawBtn = document.getElementById('withdraw-btn');
+        const rechargeModal = document.getElementById('recharge-modal');
+        const withdrawModal = document.getElementById('withdraw-modal');
+        const closeButtons = document.querySelectorAll('.close-modal');
+        
+        rechargeBtn.addEventListener('click', () => {
+            rechargeModal.style.display = 'flex';
+        });
+        
+        withdrawBtn.addEventListener('click', () => {
+            withdrawModal.style.display = 'flex';
+        });
+        
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                rechargeModal.style.display = 'none';
+                withdrawModal.style.display = 'none';
+            });
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === rechargeModal) {
+                rechargeModal.style.display = 'none';
+            }
+            if (event.target === withdrawModal) {
+                withdrawModal.style.display = 'none';
+            }
+        });
+        
+        // Recharge option selection
+        const rechargeOptions = document.querySelectorAll('.recharge-option');
+        const customAmountInput = document.getElementById('custom-amount');
+        
+        rechargeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                rechargeOptions.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+                customAmountInput.value = option.getAttribute('data-amount');
+            });
+        });
+        
+        customAmountInput.addEventListener('input', () => {
+            rechargeOptions.forEach(opt => opt.classList.remove('selected'));
+        });
+        
+        // Network selection
+        const networkButtons = document.querySelectorAll('.network-btn');
+        let selectedNetwork = 'bep20';
+        
+        networkButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                networkButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                selectedNetwork = button.getAttribute('data-network');
+                document.getElementById('recharge-address').textContent = usdtAddresses[selectedNetwork];
+            });
+        });
+        
+        // Confirm recharge
+        document.getElementById('confirm-recharge').addEventListener('click', () => {
+            const amount = parseFloat(customAmountInput.value);
+            
+            if (amount < 8) {
+                tg.showPopup({
+                    title: 'Error',
+                    message: 'Minimum recharge amount is $8.00',
+                    buttons: [{type: 'ok'}]
                 });
+                return;
+            }
+            
+            rechargeModal.style.display = 'none';
+            
+            tg.showPopup({
+                title: 'Recharge Instructions',
+                message: `Send $${amount} USDT to the ${selectedNetwork.toUpperCase()} address. Your balance will update after 3 network confirmations.`,
+                buttons: [{type: 'ok'}]
+            });
+            
+            // In a real app, you would wait for blockchain confirmation
+            // For demo purposes, we'll simulate the recharge after a delay
+            setTimeout(() => {
+                userData.balance += amount;
+                userData.rechargeTotal = (userData.rechargeTotal || 0) + amount;
+                addTransaction('recharge', amount, `Recharge (${selectedNetwork.toUpperCase()})`);
+                updateUI();
+                saveUserData();
                 
-                // Handle avatar upload
-                const avatarFile = editAvatar.files[0];
-                if (avatarFile) {
-                    const storageRef = storage.ref();
-                    const avatarRef = storageRef.child('avatars/' + currentUser.uid + '/' + Date.now() + '_' + avatarFile.name);
-                    await avatarRef.put(avatarFile);
-                    const avatarUrl = await avatarRef.getDownloadURL();
+                tg.showPopup({
+                    title: 'Recharge Successful',
+                    message: `Your account has been credited with $${amount.toFixed(2)}`,
+                    buttons: [{type: 'ok'}]
+                });
+            }, 3000);
+        });
+        
+        // Confirm withdrawal
+        document.getElementById('confirm-withdraw').addEventListener('click', () => {
+            const amount = parseFloat(document.getElementById('withdraw-amount').value);
+            const address = document.getElementById('withdraw-address').value;
+            
+            if (amount < 5) {
+                tg.showPopup({
+                    title: 'Error',
+                    message: 'Minimum withdrawal amount is $5.00',
+                    buttons: [{type: 'ok'}]
+                });
+                return;
+            }
+            
+            if (amount > userData.balance) {
+                tg.showPopup({
+                    title: 'Error',
+                    message: 'Insufficient balance',
+                    buttons: [{type: 'ok'}]
+                });
+                return;
+            }
+            
+            if (!address) {
+                tg.showPopup({
+                    title: 'Error',
+                    message: 'Please enter your USDT address',
+                    buttons: [{type: 'ok'}]
+                });
+                return;
+            }
+            
+            withdrawModal.style.display = 'none';
+            
+            // Process withdrawal
+            userData.balance -= amount;
+            userData.withdrawTotal = (userData.withdrawTotal || 0) + amount;
+            addTransaction('withdraw', -amount, `Withdrawal to ${address.substring(0, 10)}...`);
+            updateUI();
+            saveUserData();
+            
+            tg.showPopup({
+                title: 'Withdrawal Requested',
+                message: `Your withdrawal of $${amount.toFixed(2)} has been submitted. It will be processed within 24 hours.`,
+                buttons: [{type: 'ok'}]
+            });
+        });
+        
+        // VIP level selection
+        const vipLevelElements = document.querySelectorAll('.vip-level');
+        vipLevelElements.forEach(level => {
+            level.addEventListener('click', () => {
+                vipLevelElements.forEach(l => l.classList.remove('selected'));
+                level.classList.add('selected');
+                updateUI();
+            });
+        });
+        
+        // Buy VIP
+        document.getElementById('buy-vip-btn').addEventListener('click', () => {
+            const selectedVip = document.querySelector('.vip-level.selected');
+            const vipLevel = parseInt(selectedVip.getAttribute('data-level'));
+            const vipPrice = parseFloat(selectedVip.getAttribute('data-price'));
+            
+            if (userData.balance >= vipPrice && userData.vipLevel < vipLevel) {
+                tg.showPopup({
+                    title: 'Confirm VIP Purchase',
+                    message: `Are you sure you want to purchase VIP ${vipLevel} for $${vipPrice}?`,
+                    buttons: [
+                        {type: 'cancel'},
+                        {type: 'ok', text: 'Confirm'}
+                    ]
+                }, (buttonId) => {
+                    if (buttonId === 'ok') {
+                        // Process VIP purchase
+                        userData.balance -= vipPrice;
+                        userData.vipLevel = vipLevel;
+                        addTransaction('vip', -vipPrice, `VIP ${vipLevel} Purchase`);
+                        
+                        // In a real app, you would send the payment to the blockchain address
+                        // For demo, we'll simulate it
+                        setTimeout(() => {
+                            updateUI();
+                            saveUserData();
+                            
+                            tg.showPopup({
+                                title: 'VIP Activated',
+                                message: `Congratulations! You are now VIP ${vipLevel}. You can now claim daily profits.`,
+                                buttons: [{type: 'ok'}]
+                            });
+                        }, 2000);
+                    }
+                });
+            }
+        });
+        
+        // Claim daily profit
+        document.getElementById('profit-btn').addEventListener('click', () => {
+            if (userData.vipLevel > 0) {
+                const now = new Date().getTime();
+                const lastClaim = userData.lastProfitClaim || 0;
+                const nextClaimTime = lastClaim + (24 * 60 * 60 * 1000);
+                
+                if (now >= nextClaimTime) {
+                    const profitPercentage = vipLevels[userData.vipLevel].profit;
+                    const profitAmount = (userData.rechargeTotal * profitPercentage) / 100;
                     
-                    await db.collection('users').doc(currentUser.uid).update({
-                        avatar: avatarUrl
+                    userData.balance += profitAmount;
+                    userData.lastProfitClaim = now;
+                    userData.profitTotal = (userData.profitTotal || 0) + profitAmount;
+                    addTransaction('profit', profitAmount, `Daily Profit (VIP ${userData.vipLevel})`);
+                    
+                    updateUI();
+                    saveUserData();
+                    
+                    tg.showPopup({
+                        title: 'Profit Claimed',
+                        message: `You've received $${profitAmount.toFixed(2)} daily profit!`,
+                        buttons: [{type: 'ok'}]
                     });
                 }
-                
-                alert('Profile updated successfully!');
-                editProfileModal.style.display = 'none';
-                
-                // Reload profile if open
-                const existingProfile = document.getElementById('dynamic-profile');
-                if (existingProfile) {
-                    existingProfile.remove();
-                    showProfile();
-                }
-            } catch (error) {
-                alert('Error updating profile: ' + error.message);
             }
         });
-
-        // Close edit profile modal
-        closeEditProfile.addEventListener('click', () => {
-            editProfileModal.style.display = 'none';
+        
+        // Copy referral link
+        document.getElementById('copy-ref-btn').addEventListener('click', () => {
+            const referralLink = `https://t.me/AfghanPawer_Bot?start=${userId}`;
+            navigator.clipboard.writeText(referralLink).then(() => {
+                tg.showPopup({
+                    title: 'Copied!',
+                    message: 'Referral link copied to clipboard',
+                    buttons: [{type: 'ok'}]
+                });
+            });
         });
-
-        // Search functionality
-        searchExecute.addEventListener('click', async () => {
-            const query = searchInput.value.trim().toLowerCase();
-            if (!query) return;
+        
+        // Share referral link on Telegram
+        document.getElementById('share-ref-btn').addEventListener('click', () => {
+            const referralLink = `https://t.me/AfghanPawer_Bot?start=${userId}`;
+            const message = `Join AfghanPawer and earn daily profits! Use my referral link: ${referralLink}`;
             
-            searchResults.innerHTML = '';
-            
-            // Search users
-            const usersSnapshot = await db.collection('users')
-                .where('username', '>=', query)
-                .where('username', '<=', query + '\uf8ff')
-                .limit(10)
-                .get();
-            
-            usersSnapshot.forEach(doc => {
-                const user = doc.data();
-                const userElement = document.createElement('div');
-                userElement.className = 'search-result';
-                userElement.innerHTML = `
-                    <div style="text-align: center;">
-                        <i class="fas fa-user" style="font-size: 32px; margin-bottom: 10px;"></i>
-                        <div>${user.username}</div>
-                    </div>
-                `;
-                userElement.style.background = 'linear-gradient(45deg, #ff0050, #00f2ea)';
-                userElement.addEventListener('click', () => {
-                    alert('Viewing profile: ' + user.username);
+            if (tg.isVersionAtLeast('6.0')) {
+                tg.shareUrl(message, referralLink);
+            } else {
+                // Fallback for older versions
+                navigator.clipboard.writeText(message).then(() => {
+                    tg.showPopup({
+                        title: 'Copied!',
+                        message: 'Referral message copied to clipboard. You can now share it on Telegram.',
+                        buttons: [{type: 'ok'}]
+                    });
                 });
-                searchResults.appendChild(userElement);
-            });
-            
-            // Search videos by caption
-            const videosSnapshot = await db.collection('videos')
-                .where('caption', '>=', query)
-                .where('caption', '<=', query + '\uf8ff')
-                .limit(10)
-                .get();
-            
-            videosSnapshot.forEach(doc => {
-                const video = doc.data();
-                const videoElement = document.createElement('div');
-                videoElement.className = 'search-result';
-                videoElement.innerHTML = `
-                    <div style="text-align: center;">
-                        <i class="fas fa-play" style="font-size: 32px; margin-bottom: 10px;"></i>
-                        <div>${video.caption.substring(0, 20)}...</div>
-                    </div>
-                `;
-                videoElement.style.background = 'linear-gradient(45deg, #00f2ea, #ff0050)';
-                videoElement.addEventListener('click', () => {
-                    alert('Playing video: ' + video.caption);
-                });
-                searchResults.appendChild(videoElement);
-            });
-            
-            if (usersSnapshot.empty && videosSnapshot.empty) {
-                searchResults.innerHTML = '<div style="text-align: center; padding: 20px;">No results found</div>';
             }
         });
-
-        // Initialize app
-        showScreen('feed');
+        
+        // History tab switching
+        const historyTabs = document.querySelectorAll('.history-tab');
+        historyTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                historyTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                updateHistory();
+            });
+        });
+        
+        // Initialize the app
+        loadUserData();
+        
+        // Update profit timer every second
+        setInterval(updateUI, 1000);
     </script>
 </body>
 </html> 
