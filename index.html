@@ -1,33 +1,1467 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>GigaPub Ad</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AfghanX - Video Sharing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 414px;
+            margin: 0 auto;
+            background-color: #000;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Authentication Screens */
+        .auth-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .auth-screen h1 {
+            font-size: 32px;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .auth-form {
+            width: 100%;
+            max-width: 350px;
+        }
+        
+        .auth-form input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2f2f2f;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .auth-form button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        
+        .auth-switch {
+            color: #aaa;
+            margin-top: 20px;
+        }
+        
+        .auth-switch span {
+            color: #ff0050;
+            cursor: pointer;
+        }
+        
+        /* Main App */
+        .app {
+            display: none;
+        }
+        
+        /* Top Navigation */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            background-color: #000;
+            z-index: 100;
+            border-bottom: 1px solid #2f2f2f;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .nav-icons {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav-icons i {
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        /* Tab Bar */
+        .tab-bar {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-bottom: 1px solid #2f2f2f;
+            position: sticky;
+            top: 50px;
+            background-color: #000;
+            z-index: 100;
+        }
+        
+        .tab {
+            padding: 8px 15px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .tab.active {
+            font-weight: bold;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -11px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #fff;
+        }
+        
+        /* Video Feed */
+        .video-feed {
+            position: relative;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+        }
+        
+        .video-container {
+            height: 100vh;
+            scroll-snap-align: start;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .video-info {
+            position: absolute;
+            bottom: 80px;
+            left: 15px;
+            right: 15px;
+            z-index: 10;
+        }
+        
+        .username {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .caption {
+            font-size: 14px;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
+        
+        .hashtags {
+            font-size: 13px;
+            color: #00f2ea;
+            margin-bottom: 10px;
+        }
+        
+        .sound {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #ddd;
+        }
+        
+        .sound i {
+            margin-right: 5px;
+        }
+        
+        /* Video Actions */
+        .video-actions {
+            position: absolute;
+            right: 15px;
+            bottom: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            z-index: 10;
+        }
+        
+        .action {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .action-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+        
+        .action-count {
+            font-size: 13px;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #000;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid #2f2f2f;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .nav-item i {
+            font-size: 22px;
+            margin-bottom: 3px;
+        }
+        
+        .nav-item.active i {
+            color: #ff0050;
+        }
+        
+        /* Upload Screen */
+        .upload-screen {
+            display: none;
+            padding: 20px;
+        }
+        
+        .upload-form {
+            margin-top: 20px;
+        }
+        
+        .upload-form input, .upload-form textarea {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2f2f2f;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .upload-form textarea {
+            height: 100px;
+            resize: none;
+        }
+        
+        .upload-form button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* Profile Screen */
+        .profile-screen {
+            display: none;
+            padding: 20px;
+        }
+        
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-right: 20px;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .profile-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .profile-videos {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .profile-video {
+            aspect-ratio: 9/16;
+            background-color: #2f2f2f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        /* Search Screen */
+        .search-screen {
+            display: none;
+            padding: 20px;
+        }
+        
+        .search-bar {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 5px 0 0 5px;
+            background-color: #2f2f2f;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .search-bar button {
+            padding: 15px;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            color: white;
+            cursor: pointer;
+        }
+        
+        .search-results {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .search-result {
+            aspect-ratio: 9/16;
+            background-color: #2f2f2f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        /* Comments Modal */
+        .comments-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .comments-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .comments-list {
+            height: 70vh;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .comment {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .comment-content {
+            flex: 1;
+        }
+        
+        .comment-username {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .comment-text {
+            font-size: 14px;
+        }
+        
+        .comment-input {
+            display: flex;
+        }
+        
+        .comment-input input {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 5px 0 0 5px;
+            background-color: #2f2f2f;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .comment-input button {
+            padding: 15px;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            color: white;
+            cursor: pointer;
+        }
+        
+        /* Edit Profile Modal */
+        .edit-profile-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .edit-profile-form {
+            max-width: 400px;
+            margin: 50px auto;
+            background-color: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .edit-profile-form input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2f2f2f;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .edit-profile-form button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(45deg, #ff0050, #00f2ea);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        /* Responsive Styles */
+        @media (max-width: 414px) {
+            .container {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h2>🎬 GigaPub Ad</h2>
-  <button id="showAd">▶️ Watch Ad</button>
+    <div class="container">
+        <!-- Authentication Screen -->
+        <div class="auth-screen" id="auth-screen">
+            <h1>AfghanX</h1>
+            <div class="auth-form" id="login-form">
+                <input type="email" id="login-email" placeholder="Email">
+                <input type="password" id="login-password" placeholder="Password">
+                <button id="login-btn">Log In</button>
+                <div class="auth-switch">Don't have an account? <span id="show-signup">Sign Up</span></div>
+            </div>
+            
+            <div class="auth-form" id="signup-form" style="display: none;">
+                <input type="text" id="signup-username" placeholder="Username (with @)">
+                <input type="email" id="signup-email" placeholder="Email">
+                <input type="password" id="signup-password" placeholder="Password">
+                <button id="signup-btn">Sign Up</button>
+                <div class="auth-switch">Already have an account? <span id="show-login">Log In</span></div>
+            </div>
+        </div>
+        
+        <!-- Main App -->
+        <div class="app" id="app">
+            <!-- Top Navigation -->
+            <div class="top-nav">
+                <div class="logo">AfghanX</div>
+                <div class="nav-icons">
+                    <i class="fas fa-search" id="search-btn"></i>
+                    <i class="fas fa-user" id="profile-btn"></i>
+                </div>
+            </div>
+            
+            <!-- Tab Bar -->
+            <div class="tab-bar">
+                <div class="tab active" data-tab="feed">For You</div>
+                <div class="tab" data-tab="search">Search</div>
+            </div>
+            
+            <!-- Video Feed -->
+            <div class="video-feed" id="feed-screen">
+                <!-- Videos will be loaded here dynamically -->
+            </div>
+            
+            <!-- Search Screen -->
+            <div class="search-screen" id="search-screen">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Search users or videos...">
+                    <button id="search-execute"><i class="fas fa-search"></i></button>
+                </div>
+                <div class="search-results" id="search-results">
+                    <!-- Search results will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-item active" data-tab="feed">
+                    <i class="fas fa-home"></i>
+                    <span>For You</span>
+                </div>
+                <div class="nav-item" data-tab="search">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </div>
+                <div class="nav-item" id="upload-btn">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Upload</span>
+                </div>
+                <div class="nav-item" id="inbox-btn">
+                    <i class="fas fa-inbox"></i>
+                    <span>Inbox</span>
+                </div>
+                <div class="nav-item" data-tab="profile">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comments Modal -->
+        <div class="comments-modal" id="comments-modal">
+            <div class="comments-header">
+                <h2>Comments</h2>
+                <i class="fas fa-times" id="close-comments"></i>
+            </div>
+            <div class="comments-list" id="comments-list">
+                <!-- Comments will be loaded here -->
+            </div>
+            <div class="comment-input">
+                <input type="text" id="comment-text" placeholder="Add a comment...">
+                <button id="post-comment">Post</button>
+            </div>
+        </div>
+        
+        <!-- Edit Profile Modal -->
+        <div class="edit-profile-modal" id="edit-profile-modal">
+            <div class="edit-profile-form">
+                <h2>Edit Profile</h2>
+                <input type="text" id="edit-username" placeholder="Username">
+                <input type="file" id="edit-avatar" accept="image/*">
+                <button id="save-profile">Save Changes</button>
+                <button id="close-edit-profile" style="background: #555;">Cancel</button>
+            </div>
+        </div>
+    </div>
 
-  <!-- GigaPub Script -->
-  <script src="https://ad.gigapub.tech/script?id=3055"></script>
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4UbW_Iy4kUWH3V70Q1mWCI4-_KFk6ku4",
+            authDomain: "onlinewark-a0147.firebaseapp.com",
+            databaseURL: "https://onlinewark-a0147-default-rtdb.firebaseio.com",
+            projectId: "onlinewark-a0147",
+            storageBucket: "onlinewark-a0147.appspot.com",
+            messagingSenderId: "92155538620",
+            appId: "1:92155538620:android:5e198a8eea6bf17f61f4b9"
+        };
 
-  <script>
-    document.getElementById("showAd").addEventListener("click", () => {
-      if (window.showGiga) {
-        window.showGiga()
-          .then(() => {
-            alert("✅ Ad watched successfully!");
-            Telegram.WebApp.sendData("watched"); // return to bot
-          })
-          .catch((e) => {
-            alert("❌ Error while playing the ad");
-            console.error(e);
-          });
-      } else {
-        alert("⚠️ Ad not available now");
-      }
-    });
-  </script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // DOM Elements
+        const authScreen = document.getElementById('auth-screen');
+        const app = document.getElementById('app');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const showSignup = document.getElementById('show-signup');
+        const showLogin = document.getElementById('show-login');
+        const loginBtn = document.getElementById('login-btn');
+        const signupBtn = document.getElementById('signup-btn');
+        
+        const tabs = document.querySelectorAll('.tab');
+        const navItems = document.querySelectorAll('.nav-item');
+        const feedScreen = document.getElementById('feed-screen');
+        const searchScreen = document.getElementById('search-screen');
+        const searchBtn = document.getElementById('search-btn');
+        const profileBtn = document.getElementById('profile-btn');
+        const searchInput = document.getElementById('search-input');
+        const searchExecute = document.getElementById('search-execute');
+        const searchResults = document.getElementById('search-results');
+        const uploadBtn = document.getElementById('upload-btn');
+        const inboxBtn = document.getElementById('inbox-btn');
+        
+        const commentsModal = document.getElementById('comments-modal');
+        const closeComments = document.getElementById('close-comments');
+        const commentsList = document.getElementById('comments-list');
+        const commentText = document.getElementById('comment-text');
+        const postComment = document.getElementById('post-comment');
+        
+        const editProfileModal = document.getElementById('edit-profile-modal');
+        const editUsername = document.getElementById('edit-username');
+        const editAvatar = document.getElementById('edit-avatar');
+        const saveProfile = document.getElementById('save-profile');
+        const closeEditProfile = document.getElementById('close-edit-profile');
+        
+        // Global Variables
+        let currentUser = null;
+        let currentVideoId = null;
+        let videos = [];
+
+        // Authentication Functions
+        showSignup.addEventListener('click', () => {
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'block';
+        });
+
+        showLogin.addEventListener('click', () => {
+            signupForm.style.display = 'none';
+            loginForm.style.display = 'block';
+        });
+
+        signupBtn.addEventListener('click', async () => {
+            let username = document.getElementById('signup-username').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            
+            // Add @ if not present
+            if (!username.startsWith('@')) {
+                username = '@' + username;
+            }
+            
+            try {
+                // Check if username already exists
+                const usernameSnapshot = await db.collection('users').where('username', '==', username).get();
+                if (!usernameSnapshot.empty) {
+                    alert('Username already exists. Please choose a different one.');
+                    return;
+                }
+                
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Create user document in Firestore
+                await db.collection('users').doc(user.uid).set({
+                    username: username,
+                    email: email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    followers: 0,
+                    following: 0,
+                    likes: 0,
+                    videos: 0,
+                    avatar: null
+                });
+                
+                alert('Account created successfully!');
+                showLogin.click();
+            } catch (error) {
+                alert('Error creating account: ' + error.message);
+            }
+        });
+
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (error) {
+                alert('Error signing in: ' + error.message);
+            }
+        });
+
+        // Auth State Observer
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                
+                // Switch to app view
+                authScreen.style.display = 'none';
+                app.style.display = 'block';
+                
+                // Load user's feed
+                loadFeed();
+            } else {
+                currentUser = null;
+                authScreen.style.display = 'flex';
+                app.style.display = 'none';
+            }
+        });
+
+        // Navigation Functions
+        function showScreen(screenName) {
+            // Hide all screens
+            feedScreen.style.display = 'none';
+            searchScreen.style.display = 'none';
+            
+            // Show selected screen
+            if (screenName === 'feed') {
+                feedScreen.style.display = 'block';
+                loadFeed();
+            } else if (screenName === 'search') {
+                searchScreen.style.display = 'block';
+            } else if (screenName === 'profile') {
+                showProfile();
+            }
+            
+            // Update active tabs
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-tab') === screenName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            navItems.forEach(item => {
+                if (item.getAttribute('data-tab') === screenName) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        // Tab click events
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const screenName = tab.getAttribute('data-tab');
+                showScreen(screenName);
+            });
+        });
+
+        // Bottom nav click events
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const screenName = item.getAttribute('data-tab');
+                showScreen(screenName);
+            });
+        });
+
+        // Search button click event
+        searchBtn.addEventListener('click', () => {
+            showScreen('search');
+        });
+
+        // Profile button click event
+        profileBtn.addEventListener('click', () => {
+            showProfile();
+        });
+
+        // Upload button click event
+        uploadBtn.addEventListener('click', () => {
+            uploadVideo();
+        });
+
+        // Show profile screen
+        function showProfile() {
+            // Create profile screen dynamically
+            const existingProfile = document.getElementById('dynamic-profile');
+            if (existingProfile) {
+                existingProfile.remove();
+            }
+            
+            const profileScreen = document.createElement('div');
+            profileScreen.id = 'dynamic-profile';
+            profileScreen.className = 'profile-screen';
+            profileScreen.style.display = 'block';
+            profileScreen.style.position = 'fixed';
+            profileScreen.style.top = '0';
+            profileScreen.style.left = '0';
+            profileScreen.style.width = '100%';
+            profileScreen.style.height = '100%';
+            profileScreen.style.background = '#000';
+            profileScreen.style.zIndex = '200';
+            profileScreen.style.padding = '20px';
+            profileScreen.style.overflowY = 'auto';
+            
+            // Close button
+            const closeBtn = document.createElement('i');
+            closeBtn.className = 'fas fa-times';
+            closeBtn.style.position = 'absolute';
+            closeBtn.style.top = '20px';
+            closeBtn.style.right = '20px';
+            closeBtn.style.fontSize = '24px';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.addEventListener('click', () => {
+                profileScreen.remove();
+                showScreen('feed');
+            });
+            
+            profileScreen.appendChild(closeBtn);
+            
+            // Load profile content
+            loadProfileContent(profileScreen);
+            
+            document.body.appendChild(profileScreen);
+        }
+
+        // Load profile content
+        async function loadProfileContent(container) {
+            if (!currentUser) return;
+            
+            const userDoc = await db.collection('users').doc(currentUser.uid).get();
+            const userData = userDoc.data();
+            
+            // Profile header
+            const profileHeader = document.createElement('div');
+            profileHeader.className = 'profile-header';
+            
+            const profileAvatar = document.createElement('div');
+            profileAvatar.className = 'profile-avatar';
+            if (userData.avatar) {
+                profileAvatar.style.backgroundImage = `url(${userData.avatar})`;
+                profileAvatar.style.backgroundSize = 'cover';
+                profileAvatar.style.backgroundPosition = 'center';
+                profileAvatar.innerHTML = '';
+            } else {
+                profileAvatar.innerHTML = userData.username.charAt(1).toUpperCase();
+            }
+            profileAvatar.addEventListener('click', () => {
+                editProfileModal.style.display = 'block';
+            });
+            
+            const profileInfo = document.createElement('div');
+            profileInfo.innerHTML = `
+                <h2>${userData.username}</h2>
+                <button id="edit-profile-btn" style="padding: 8px 15px; background: #333; color: white; border: none; border-radius: 5px; margin-top: 10px;">Edit Profile</button>
+            `;
+            
+            profileHeader.appendChild(profileAvatar);
+            profileHeader.appendChild(profileInfo);
+            container.appendChild(profileHeader);
+            
+            // Profile stats
+            const profileStats = document.createElement('div');
+            profileStats.className = 'profile-stats';
+            profileStats.innerHTML = `
+                <div class="stat">
+                    <div class="stat-value">${userData.videos || 0}</div>
+                    <div class="stat-label">Videos</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${userData.followers || 0}</div>
+                    <div class="stat-label">Followers</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${userData.following || 0}</div>
+                    <div class="stat-label">Following</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${userData.likes || 0}</div>
+                    <div class="stat-label">Likes</div>
+                </div>
+            `;
+            container.appendChild(profileStats);
+            
+            // Profile videos
+            const profileVideos = document.createElement('div');
+            profileVideos.className = 'profile-videos';
+            profileVideos.id = 'profile-videos-container';
+            container.appendChild(profileVideos);
+            
+            // Load user's videos
+            const videosSnapshot = await db.collection('videos')
+                .where('userId', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .get();
+            
+            videosSnapshot.forEach(doc => {
+                const video = doc.data();
+                const videoElement = document.createElement('div');
+                videoElement.className = 'profile-video';
+                videoElement.innerHTML = '<i class="fas fa-play"></i>';
+                videoElement.style.background = 'linear-gradient(45deg, #ff0050, #00f2ea)';
+                videoElement.addEventListener('click', () => {
+                    // In a real app, this would play the video
+                    alert('Playing video: ' + video.caption);
+                });
+                profileVideos.appendChild(videoElement);
+            });
+            
+            // Edit profile button
+            document.getElementById('edit-profile-btn').addEventListener('click', () => {
+                editProfileModal.style.display = 'block';
+                editUsername.value = userData.username;
+            });
+        }
+
+        // Load Video Feed
+        async function loadFeed() {
+            feedScreen.innerHTML = '';
+            
+            // Get videos from Firestore
+            const videosSnapshot = await db.collection('videos')
+                .orderBy('createdAt', 'desc')
+                .limit(10)
+                .get();
+            
+            videos = [];
+            videosSnapshot.forEach(doc => {
+                videos.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Create video elements
+            videos.forEach(video => {
+                const videoContainer = document.createElement('div');
+                videoContainer.className = 'video-container';
+                videoContainer.setAttribute('data-video-id', video.id);
+                
+                // Create video placeholder (in a real app, this would be an actual video player)
+                const videoPlaceholder = document.createElement('div');
+                videoPlaceholder.className = 'video-player';
+                videoPlaceholder.style.background = 'linear-gradient(45deg, #ff0050, #00f2ea)';
+                videoPlaceholder.style.display = 'flex';
+                videoPlaceholder.style.alignItems = 'center';
+                videoPlaceholder.style.justifyContent = 'center';
+                videoPlaceholder.style.fontSize = '24px';
+                videoPlaceholder.style.fontWeight = 'bold';
+                videoPlaceholder.style.color = 'white';
+                videoPlaceholder.innerHTML = `
+                    <div style="text-align: center;">
+                        <i class="fas fa-play" style="font-size: 48px; margin-bottom: 10px;"></i>
+                        <div>${video.caption.substring(0, 30)}...</div>
+                    </div>
+                `;
+                
+                // Video info
+                const videoInfo = document.createElement('div');
+                videoInfo.className = 'video-info';
+                
+                const username = document.createElement('div');
+                username.className = 'username';
+                username.textContent = video.username;
+                
+                const caption = document.createElement('div');
+                caption.className = 'caption';
+                caption.textContent = video.caption;
+                
+                const hashtags = document.createElement('div');
+                hashtags.className = 'hashtags';
+                hashtags.textContent = video.hashtags;
+                
+                const sound = document.createElement('div');
+                sound.className = 'sound';
+                sound.innerHTML = '<i class="fas fa-music"></i><span>Original Sound</span>';
+                
+                videoInfo.appendChild(username);
+                videoInfo.appendChild(caption);
+                videoInfo.appendChild(hashtags);
+                videoInfo.appendChild(sound);
+                
+                // Video actions
+                const videoActions = document.createElement('div');
+                videoActions.className = 'video-actions';
+                
+                // Avatar
+                const avatar = document.createElement('div');
+                avatar.className = 'avatar';
+                avatar.innerHTML = video.username.charAt(1).toUpperCase();
+                avatar.addEventListener('click', () => {
+                    // In a real app, this would navigate to the user's profile
+                    showProfile();
+                });
+                
+                // Like button
+                const likeAction = document.createElement('div');
+                likeAction.className = 'action';
+                
+                const likeIcon = document.createElement('div');
+                likeIcon.className = 'action-icon';
+                likeIcon.innerHTML = '<i class="fas fa-heart"></i>';
+                likeIcon.addEventListener('click', () => likeVideo(video.id));
+                
+                const likeCount = document.createElement('div');
+                likeCount.className = 'action-count';
+                likeCount.textContent = video.likes || 0;
+                likeCount.id = `likes-${video.id}`;
+                
+                likeAction.appendChild(likeIcon);
+                likeAction.appendChild(likeCount);
+                
+                // Comment button
+                const commentAction = document.createElement('div');
+                commentAction.className = 'action';
+                
+                const commentIcon = document.createElement('div');
+                commentIcon.className = 'action-icon';
+                commentIcon.innerHTML = '<i class="fas fa-comment"></i>';
+                commentIcon.addEventListener('click', () => openComments(video.id));
+                
+                const commentCount = document.createElement('div');
+                commentCount.className = 'action-count';
+                commentCount.textContent = video.comments || 0;
+                commentCount.id = `comments-${video.id}`;
+                
+                commentAction.appendChild(commentIcon);
+                commentAction.appendChild(commentCount);
+                
+                // Share button
+                const shareAction = document.createElement('div');
+                shareAction.className = 'action';
+                
+                const shareIcon = document.createElement('div');
+                shareIcon.className = 'action-icon';
+                shareIcon.innerHTML = '<i class="fas fa-share"></i>';
+                shareIcon.addEventListener('click', () => shareVideo(video.id));
+                
+                const shareCount = document.createElement('div');
+                shareCount.className = 'action-count';
+                shareCount.textContent = video.shares || 0;
+                shareCount.id = `shares-${video.id}`;
+                
+                shareAction.appendChild(shareIcon);
+                shareAction.appendChild(shareCount);
+                
+                videoActions.appendChild(avatar);
+                videoActions.appendChild(likeAction);
+                videoActions.appendChild(commentAction);
+                videoActions.appendChild(shareAction);
+                
+                videoContainer.appendChild(videoPlaceholder);
+                videoContainer.appendChild(videoInfo);
+                videoContainer.appendChild(videoActions);
+                
+                feedScreen.appendChild(videoContainer);
+            });
+        }
+
+        // Like a video
+        async function likeVideo(videoId) {
+            if (!currentUser) return;
+            
+            const videoRef = db.collection('videos').doc(videoId);
+            const videoDoc = await videoRef.get();
+            const videoData = videoDoc.data();
+            
+            const currentLikes = videoData.likes || 0;
+            await videoRef.update({ likes: currentLikes + 1 });
+            
+            // Update UI
+            document.getElementById(`likes-${videoId}`).textContent = currentLikes + 1;
+            
+            // Add to user's liked videos
+            await db.collection('users').doc(currentUser.uid).update({
+                likes: firebase.firestore.FieldValue.increment(1)
+            });
+        }
+
+        // Share a video
+        async function shareVideo(videoId) {
+            if (!currentUser) return;
+            
+            const videoRef = db.collection('videos').doc(videoId);
+            const videoDoc = await videoRef.get();
+            const videoData = videoDoc.data();
+            
+            const currentShares = videoData.shares || 0;
+            await videoRef.update({ shares: currentShares + 1 });
+            
+            // Update UI
+            document.getElementById(`shares-${videoId}`).textContent = currentShares + 1;
+            
+            alert('Video shared successfully!');
+        }
+
+        // Open comments modal
+        async function openComments(videoId) {
+            currentVideoId = videoId;
+            commentsModal.style.display = 'block';
+            commentsList.innerHTML = '';
+            
+            // Load comments
+            const commentsSnapshot = await db.collection('videos').doc(videoId)
+                .collection('comments').orderBy('createdAt', 'desc').get();
+            
+            commentsSnapshot.forEach(doc => {
+                const comment = doc.data();
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                
+                const commentAvatar = document.createElement('div');
+                commentAvatar.className = 'comment-avatar';
+                commentAvatar.innerHTML = comment.username.charAt(1).toUpperCase();
+                
+                const commentContent = document.createElement('div');
+                commentContent.className = 'comment-content';
+                
+                const commentUsername = document.createElement('div');
+                commentUsername.className = 'comment-username';
+                commentUsername.textContent = comment.username;
+                
+                const commentText = document.createElement('div');
+                commentText.className = 'comment-text';
+                commentText.textContent = comment.text;
+                
+                commentContent.appendChild(commentUsername);
+                commentContent.appendChild(commentText);
+                
+                commentElement.appendChild(commentAvatar);
+                commentElement.appendChild(commentContent);
+                
+                commentsList.appendChild(commentElement);
+            });
+        }
+
+        // Close comments modal
+        closeComments.addEventListener('click', () => {
+            commentsModal.style.display = 'none';
+        });
+
+        // Post a comment
+        postComment.addEventListener('click', async () => {
+            if (!currentUser || !currentVideoId) return;
+            
+            const text = commentText.value.trim();
+            if (!text) return;
+            
+            // Get username
+            const userDoc = await db.collection('users').doc(currentUser.uid).get();
+            const userData = userDoc.data();
+            
+            // Add comment to Firestore
+            await db.collection('videos').doc(currentVideoId)
+                .collection('comments').add({
+                    userId: currentUser.uid,
+                    username: userData.username,
+                    text: text,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            
+            // Update comment count
+            const videoRef = db.collection('videos').doc(currentVideoId);
+            const videoDoc = await videoRef.get();
+            const videoData = videoDoc.data();
+            
+            const currentComments = videoData.comments || 0;
+            await videoRef.update({ comments: currentComments + 1 });
+            
+            // Update UI
+            document.getElementById(`comments-${currentVideoId}`).textContent = currentComments + 1;
+            
+            // Clear input
+            commentText.value = '';
+            
+            // Reload comments
+            openComments(currentVideoId);
+        });
+
+        // Upload video
+        function uploadVideo() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'video/*';
+            fileInput.click();
+            
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const caption = prompt('Enter video caption:');
+                if (!caption) return;
+                
+                const hashtags = prompt('Enter hashtags (e.g., #viral #foryou):') || '';
+                
+                try {
+                    // Get username
+                    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                    const userData = userDoc.data();
+                    
+                    // Upload video to Firebase Storage
+                    const storageRef = storage.ref();
+                    const videoRef = storageRef.child('videos/' + currentUser.uid + '/' + Date.now() + '_' + file.name);
+                    await videoRef.put(file);
+                    const videoUrl = await videoRef.getDownloadURL();
+                    
+                    // Add video to Firestore
+                    await db.collection('videos').add({
+                        userId: currentUser.uid,
+                        username: userData.username,
+                        videoUrl: videoUrl,
+                        caption: caption,
+                        hashtags: hashtags,
+                        likes: 0,
+                        comments: 0,
+                        shares: 0,
+                        views: 0,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Update user's video count
+                    await db.collection('users').doc(currentUser.uid).update({
+                        videos: firebase.firestore.FieldValue.increment(1)
+                    });
+                    
+                    alert('Video uploaded successfully!');
+                    loadFeed();
+                } catch (error) {
+                    alert('Error uploading video: ' + error.message);
+                }
+            });
+        }
+
+        // Edit profile
+        saveProfile.addEventListener('click', async () => {
+            if (!currentUser) return;
+            
+            const newUsername = editUsername.value.trim();
+            if (!newUsername) {
+                alert('Please enter a username');
+                return;
+            }
+            
+            // Add @ if not present
+            const formattedUsername = newUsername.startsWith('@') ? newUsername : '@' + newUsername;
+            
+            try {
+                // Check if username already exists (excluding current user)
+                const usernameSnapshot = await db.collection('users')
+                    .where('username', '==', formattedUsername)
+                    .where('uid', '!=', currentUser.uid)
+                    .get();
+                
+                if (!usernameSnapshot.empty) {
+                    alert('Username already exists. Please choose a different one.');
+                    return;
+                }
+                
+                // Update username
+                await db.collection('users').doc(currentUser.uid).update({
+                    username: formattedUsername
+                });
+                
+                // Handle avatar upload
+                const avatarFile = editAvatar.files[0];
+                if (avatarFile) {
+                    const storageRef = storage.ref();
+                    const avatarRef = storageRef.child('avatars/' + currentUser.uid + '/' + Date.now() + '_' + avatarFile.name);
+                    await avatarRef.put(avatarFile);
+                    const avatarUrl = await avatarRef.getDownloadURL();
+                    
+                    await db.collection('users').doc(currentUser.uid).update({
+                        avatar: avatarUrl
+                    });
+                }
+                
+                alert('Profile updated successfully!');
+                editProfileModal.style.display = 'none';
+                
+                // Reload profile if open
+                const existingProfile = document.getElementById('dynamic-profile');
+                if (existingProfile) {
+                    existingProfile.remove();
+                    showProfile();
+                }
+            } catch (error) {
+                alert('Error updating profile: ' + error.message);
+            }
+        });
+
+        // Close edit profile modal
+        closeEditProfile.addEventListener('click', () => {
+            editProfileModal.style.display = 'none';
+        });
+
+        // Search functionality
+        searchExecute.addEventListener('click', async () => {
+            const query = searchInput.value.trim().toLowerCase();
+            if (!query) return;
+            
+            searchResults.innerHTML = '';
+            
+            // Search users
+            const usersSnapshot = await db.collection('users')
+                .where('username', '>=', query)
+                .where('username', '<=', query + '\uf8ff')
+                .limit(10)
+                .get();
+            
+            usersSnapshot.forEach(doc => {
+                const user = doc.data();
+                const userElement = document.createElement('div');
+                userElement.className = 'search-result';
+                userElement.innerHTML = `
+                    <div style="text-align: center;">
+                        <i class="fas fa-user" style="font-size: 32px; margin-bottom: 10px;"></i>
+                        <div>${user.username}</div>
+                    </div>
+                `;
+                userElement.style.background = 'linear-gradient(45deg, #ff0050, #00f2ea)';
+                userElement.addEventListener('click', () => {
+                    alert('Viewing profile: ' + user.username);
+                });
+                searchResults.appendChild(userElement);
+            });
+            
+            // Search videos by caption
+            const videosSnapshot = await db.collection('videos')
+                .where('caption', '>=', query)
+                .where('caption', '<=', query + '\uf8ff')
+                .limit(10)
+                .get();
+            
+            videosSnapshot.forEach(doc => {
+                const video = doc.data();
+                const videoElement = document.createElement('div');
+                videoElement.className = 'search-result';
+                videoElement.innerHTML = `
+                    <div style="text-align: center;">
+                        <i class="fas fa-play" style="font-size: 32px; margin-bottom: 10px;"></i>
+                        <div>${video.caption.substring(0, 20)}...</div>
+                    </div>
+                `;
+                videoElement.style.background = 'linear-gradient(45deg, #00f2ea, #ff0050)';
+                videoElement.addEventListener('click', () => {
+                    alert('Playing video: ' + video.caption);
+                });
+                searchResults.appendChild(videoElement);
+            });
+            
+            if (usersSnapshot.empty && videosSnapshot.empty) {
+                searchResults.innerHTML = '<div style="text-align: center; padding: 20px;">No results found</div>';
+            }
+        });
+
+        // Initialize app
+        showScreen('feed');
+    </script>
 </body>
 </html> 
