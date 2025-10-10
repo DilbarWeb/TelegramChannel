@@ -121,6 +121,8 @@
             padding: 20px;
             margin: 15px 0;
             color: #2c5530;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .transaction-item {
@@ -135,12 +137,12 @@
             flex: 1;
         }
 
-        .transaction-name {
+        .transaction-username {
             font-weight: bold;
             color: #006400;
         }
 
-        .transaction-account {
+        .transaction-card {
             font-size: 0.9em;
             color: #666;
         }
@@ -180,6 +182,12 @@
             justify-content: center;
             color: #666;
         }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #006400;
+        }
     </style>
 </head>
 <body>
@@ -190,7 +198,7 @@
         </div>
 
         <div id="userInfo" class="user-info">
-            <div id="userName"></div>
+            <div id="telegramUsername"></div>
             <div id="accountInfo"></div>
         </div>
 
@@ -199,7 +207,7 @@
             <h3 style="text-align: center; color: #008080; margin-bottom: 20px;">لیږد رالیږد</h3>
             <div class="form-group">
                 <label>د مقصد کارت نمبر:</label>
-                <input type="text" id="toAccount" placeholder="1234-5678-9012-3456">
+                <input type="text" id="toAccount" placeholder="6037-XXXX-XXXX-XXXX">
             </div>
             <div class="form-group">
                 <label>مبلغ (AFN):</label>
@@ -226,14 +234,13 @@
         <div id="mainPage">
             <div class="balance-card">
                 <div style="text-align: center; color: #008080; font-weight: bold;">ستاسې موجودي</div>
-                <div class="balance-amount" id="balance">100,000 AFN</div>
+                <div class="balance-amount" id="balance">0 AFN</div>
                 <div style="text-align: center; color: #666; font-size: 0.9em;" id="accountNumber"></div>
             </div>
 
             <div class="account-info">
                 <h3 style="margin-bottom: 15px; color: #008080;">د اکونټ معلومات</h3>
                 <p>د کارت نمبر: <strong id="displayAccountNumber"></strong></p>
-                <p>د کارن نوم: <strong id="displayUserName"></strong></p>
                 <p>د Telegram نوم: <strong id="displayTelegramName"></strong></p>
             </div>
 
@@ -244,13 +251,15 @@
 
             <div class="transaction-history">
                 <h3 style="color: #008080; margin-bottom: 15px;">د لیږد رالیږد تاریخچه</h3>
-                <div id="transactionsList"></div>
+                <div id="transactionsList">
+                    <div class="loading">د معلوماتو بار کول...</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // د Firebase تنظیمات - مهرباني وکړئ دا معلومات بدل کړئ!
+        // د Firebase تنظیمات
         const firebaseConfig = {
             apiKey: "AIzaSyC9YnQelXYjrKnkQmzBYD_31MPj2BGDRQM",
             authDomain: "dogs-31cfa.firebaseapp.com",
@@ -265,7 +274,7 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // د Telegram Web App معلومات
+        // د Telegram Web App
         let tg = window.Telegram.WebApp;
         let user = null;
         let currentUserData = null;
@@ -274,16 +283,22 @@
         function initializeApp() {
             if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 user = tg.initDataUnsafe.user;
-                loadUserData(user.id);
+                console.log('Telegram User:', user);
+                initializeUser();
             } else {
-                // د تست لپاره ډیټا
+                // د تست لپاره
                 user = { 
-                    id: 123456, 
-                    first_name: "احمد",
-                    username: "ahmad123"
+                    id: Math.floor(Math.random() * 1000000), 
+                    username: "test_user",
+                    first_name: "Test"
                 };
-                loadUserData(user.id);
+                initializeUser();
             }
+        }
+
+        function initializeUser() {
+            tg.expand();
+            loadUserData(user.id);
         }
 
         function loadUserData(userId) {
@@ -303,15 +318,18 @@
         function createNewUser(userId) {
             const cardNumber = generateCardNumber();
             const userData = {
-                name: user.first_name || 'کارونکی',
-                telegramName: user.username || 'نامعلوم',
+                telegramUsername: user.username || 'user_' + userId,
                 telegramId: user.id,
                 cardNumber: cardNumber,
                 balance: 100000,
                 createdAt: new Date().toISOString()
             };
 
-            database.ref('users/' + userId).set(userData);
+            database.ref('users/' + userId).set(userData)
+                .then(() => {
+                    currentUserData = userData;
+                    displayUserInfo(userData);
+                });
         }
 
         function generateCardNumber() {
@@ -322,13 +340,12 @@
         }
 
         function displayUserInfo(userData) {
-            document.getElementById('userName').textContent = `نوم: ${userData.name}`;
-            document.getElementById('accountInfo').textContent = `کارت نمبر: ${userData.cardNumber}`;
+            document.getElementById('telegramUsername').textContent = `@${userData.telegramUsername}`;
+            document.getElementById('accountInfo').textContent = `کارت: ${userData.cardNumber}`;
             document.getElementById('balance').textContent = userData.balance.toLocaleString() + ' AFN';
-            document.getElementById('accountNumber').textContent = `کارت نمبر: ${userData.cardNumber}`;
+            document.getElementById('accountNumber').textContent = `کارت: ${userData.cardNumber}`;
             document.getElementById('displayAccountNumber').textContent = userData.cardNumber;
-            document.getElementById('displayUserName').textContent = userData.name;
-            document.getElementById('displayTelegramName').textContent = userData.telegramName || 'نامعلوم';
+            document.getElementById('displayTelegramName').textContent = '@' + userData.telegramUsername;
             document.getElementById('receiveAccountNumber').textContent = userData.cardNumber;
         }
 
@@ -349,7 +366,7 @@
         }
 
         async function processTransfer() {
-            const toAccount = document.getElementById('toAccount').value;
+            const toAccount = document.getElementById('toAccount').value.trim();
             const amount = parseInt(document.getElementById('amount').value);
             
             if (!toAccount || !amount) {
@@ -375,37 +392,46 @@
                 return;
             }
 
+            if (recipient.userId === user.id.toString()) {
+                alert('تاسو نشئ کولی پیسې خپل ځان ته لیږد رالیږد کړئ');
+                return;
+            }
+
             // د لیږد رالیږد پروسه
+            const transactionId = database.ref('transactions').push().key;
             const transaction = {
-                fromUserId: user.id,
-                fromUserName: currentUserData.name,
-                fromUserTelegram: currentUserData.telegramName,
+                id: transactionId,
+                fromUserId: user.id.toString(),
+                fromTelegramUsername: currentUserData.telegramUsername,
                 fromCardNumber: currentUserData.cardNumber,
                 toUserId: recipient.userId,
-                toUserName: recipient.name,
-                toUserTelegram: recipient.telegramName,
+                toTelegramUsername: recipient.telegramUsername,
                 toCardNumber: toAccount,
                 amount: amount,
                 timestamp: new Date().toISOString(),
                 date: new Date().toLocaleString('ps-AF'),
-                status: 'completed',
-                type: 'transfer'
+                status: 'completed'
             };
 
-            // په Firebase کې ذخیره کول
-            const transactionRef = database.ref('transactions').push();
-            await transactionRef.set(transaction);
-            
-            // د موجودي تازه کول
-            await updateBalance(user.id, -amount);
-            await updateBalance(recipient.userId, amount);
+            try {
+                // د لیږد رالیږد ذخیره کول
+                await database.ref('transactions/' + transactionId).set(transaction);
+                
+                // د موجودي تازه کول
+                await updateBalance(user.id.toString(), -amount);
+                await updateBalance(recipient.userId, amount);
 
-            // فورم پاکول
-            document.getElementById('toAccount').value = '';
-            document.getElementById('amount').value = '';
+                // فورم پاکول
+                document.getElementById('toAccount').value = '';
+                document.getElementById('amount').value = '';
 
-            alert(`په بریالیتوب سره ${amount} AFN ${recipient.name} ته لیږد رالیږد شو!`);
-            showMain();
+                alert(`په بریالیتوب سره ${amount} AFN @${recipient.telegramUsername} ته لیږد رالیږد شو!`);
+                showMain();
+                
+            } catch (error) {
+                console.error('د لیږد رالیږد کې ستونزه:', error);
+                alert('د لیږد رالیږد په وخت کې ستونزه راغله');
+            }
         }
 
         function findUserByCardNumber(cardNumber) {
@@ -418,8 +444,7 @@
                         if (userData.cardNumber === cardNumber) {
                             foundUser = {
                                 userId: childSnapshot.key,
-                                name: userData.name,
-                                telegramName: userData.telegramName,
+                                telegramUsername: userData.telegramUsername,
                                 cardNumber: userData.cardNumber
                             };
                         }
@@ -430,20 +455,27 @@
         }
 
         function updateBalance(userId, amount) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const userRef = database.ref('users/' + userId);
                 userRef.transaction((currentData) => {
                     if (currentData) {
                         currentData.balance += amount;
+                        currentData.lastUpdate = new Date().toISOString();
                     }
                     return currentData;
-                }, () => resolve());
+                }, (error, committed) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(committed);
+                    }
+                });
             });
         }
 
         function loadTransactions(userId) {
             const transactionsRef = database.ref('transactions');
-            transactionsRef.orderByChild('timestamp').limitToLast(10).on('value', (snapshot) => {
+            transactionsRef.orderByChild('timestamp').limitToLast(20).on('value', (snapshot) => {
                 const transactionsList = document.getElementById('transactionsList');
                 transactionsList.innerHTML = '';
                 
@@ -451,7 +483,7 @@
                 snapshot.forEach((childSnapshot) => {
                     const transaction = childSnapshot.val();
                     // یوازې هغه لیږدونه ښکاره کړئ چې د اوسني کارن پورې اړه لري
-                    if (transaction.fromUserId === userId || transaction.toUserId === userId) {
+                    if (transaction.fromUserId === userId.toString() || transaction.toUserId === userId.toString()) {
                         transactions.push(transaction);
                     }
                 });
@@ -461,12 +493,12 @@
                     const item = document.createElement('div');
                     item.className = 'transaction-item';
                     
-                    if (transaction.fromUserId === userId) {
+                    if (transaction.fromUserId === userId.toString()) {
                         // د لیږد رالیږد
                         item.innerHTML = `
                             <div class="transaction-details">
-                                <div class="transaction-name">${transaction.toUserName}</div>
-                                <div class="transaction-account">${transaction.toCardNumber}</div>
+                                <div class="transaction-username">@${transaction.toTelegramUsername}</div>
+                                <div class="transaction-card">${transaction.toCardNumber}</div>
                                 <div class="transaction-date">${transaction.date}</div>
                             </div>
                             <div class="transaction-amount" style="color: red;">-${transaction.amount} AFN</div>
@@ -475,8 +507,8 @@
                         // د ترلاسه کولو
                         item.innerHTML = `
                             <div class="transaction-details">
-                                <div class="transaction-name">${transaction.fromUserName}</div>
-                                <div class="transaction-account">${transaction.fromCardNumber}</div>
+                                <div class="transaction-username">@${transaction.fromTelegramUsername}</div>
+                                <div class="transaction-card">${transaction.fromCardNumber}</div>
                                 <div class="transaction-date">${transaction.date}</div>
                             </div>
                             <div class="transaction-amount" style="color: green;">+${transaction.amount} AFN</div>
@@ -496,4 +528,4 @@
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
-</html>
+</html> 
